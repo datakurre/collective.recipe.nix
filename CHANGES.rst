@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.1.2 (unreleased)
+0.2.0 (2015-07-08)
 ------------------
 
 - Add buildout-based configuration
