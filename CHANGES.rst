@@ -4,8 +4,9 @@ Changelog
 0.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Change to produce {name}-env.nix instead of {name}.env.nix as buildable
+  derivations
+  [datakurre]]
 
 0.3.0 (2015-07-08)
 ------------------
