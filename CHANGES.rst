@@ -4,8 +4,9 @@ Changelog
 0.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Change resulting derivation to be buildEnv with python.buildEnv to make it
+  also nix-buildable
+  [datakurre]
 
 0.2.0 (2015-07-08)
 ------------------

@@ -122,56 +122,56 @@ class Nix(object):
                 if '#' in value:
                     urls[key] = value.strip()
 
-        with open(self.name + '.nix', 'w') as output:
-            output.write("""\
+        output = """\
 with import <nixpkgs> {};
 let dependencies = rec {
-""")
-            for package in ws:
-                if package.project_name in nixpkgs:
-                    output.write("""\
+"""
+        for package in ws:
+
+            if package.project_name in nixpkgs:
+                output += """\
   {name:s} = {nixpkgs_name:s};
 """.format(name=normalize(package.project_name),
-           nixpkgs_name=nixpkgs[package.project_name]))
-                    continue
+           nixpkgs_name=nixpkgs[package.project_name])
+                continue
 
-                if package.project_name in urls:
-                    url, md5 = spliturl(urls[package.project_name])
-                else:
-                    candidates = [
-                        data for data in pypi.release_urls(
-                            package.project_name, package.version)
-                        if SDIST_URL.match(data['url'])
-                    ]
-                    assert candidates,\
-                        "Package {0:s}-{1:s} not found at PyPI".format(
-                            package.project_name, package.version)
-                    url = candidates[0]['url']
-                    md5 = candidates[0]['md5_digest']
-
-                requirements += [
-                    req.project_name for req in package.requires()
-                    if REQUIRES_BLACKLIST.match(req.project_name)
+            if package.project_name in urls:
+                url, md5 = spliturl(urls[package.project_name])
+            else:
+                candidates = [
+                    data for data in pypi.release_urls(
+                        package.project_name, package.version)
+                    if SDIST_URL.match(data['url'])
                 ]
+                assert candidates,\
+                    "Package {0:s}-{1:s} not found at PyPI".format(
+                        package.project_name, package.version)
+                url = candidates[0]['url']
+                md5 = candidates[0]['md5_digest']
 
-                substitutions = dict(
-                    name=normalize(package.project_name),
-                    package='%s-%s' % (package.project_name, package.version),
-                    url=url, md5=md5,
-                    inputs='\n      '.join(
-                        build_inputs.get(package.project_name, [])
-                    ),
-                    requires='\n      '.join([
-                        normalize(req.project_name)
-                        for req in package.requires()
-                        if not REQUIRES_BLACKLIST.match(req.project_name)
-                    ]),
-                    derivations='\n'.join(filter(bool, [
-                        derivations.pop(req, '')
-                        for req in build_inputs.get(package.project_name, [])
-                    ])))
+            requirements += [
+                req.project_name for req in package.requires()
+                if REQUIRES_BLACKLIST.match(req.project_name)
+            ]
 
-                output.write("""\
+            substitutions = dict(
+                name=normalize(package.project_name),
+                package='%s-%s' % (package.project_name, package.version),
+                url=url, md5=md5,
+                inputs='\n      '.join(
+                    build_inputs.get(package.project_name, [])
+                ),
+                requires='\n      '.join([
+                    normalize(req.project_name)
+                    for req in package.requires()
+                    if not REQUIRES_BLACKLIST.match(req.project_name)
+                ]),
+                derivations='\n'.join(filter(bool, [
+                    derivations.pop(req, '')
+                    for req in build_inputs.get(package.project_name, [])
+                ])))
+
+            output += """\
   {name:s} = buildPythonPackage {{
     name = "{package:s}";
     src = fetchurl {{
@@ -186,19 +186,40 @@ let dependencies = rec {
     ];
     doCheck = false;
   }};
-{derivations:s}""".format(**substitutions))
+{derivations:s}""".format(**substitutions)
 
-            substitutions = dict(
-                name=self.name,
-                inputs='\n    '.join(map(normalize, set(requirements))
-                                     + build_inputs[None])
-            )
-            output.write("""\
+        substitutions = dict(
+            name=self.name,
+            paths='\n    '.join(build_inputs[None]),
+            extraLibs='\n        '.join(map(normalize, set(requirements))),
+            buildInputs='\n      '.join(map(normalize, set(requirements))
+                                        + build_inputs[None])
+        )
+
+        with open(self.name + '.nix', 'w') as handle:
+            handle.write(output + """\
 }};
 in with dependencies; stdenv.mkDerivation {{
   name = "{name:s}";
   buildInputs = [
-    {inputs:s}
+    {buildInputs:s}
+  ];
+}}
+""".format(**substitutions))
+
+        with open(self.name + '.env.nix', 'w') as handle:
+            handle.write(output + """\
+}};
+in with dependencies; buildEnv {{
+  name = "{name:s}";
+  paths = [
+    {paths:s}
+    (python.buildEnv.override {{
+      ignoreCollisions = true;
+      extraLibs = [
+        {extraLibs:s}
+      ];
+    }})
   ];
 }}
 """.format(**substitutions))
