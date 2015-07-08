@@ -4,8 +4,10 @@ Changelog
 0.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add buildout-based configuration
+  [datakurre]
+- Back to development: 0.1.2
+  [datakurre]
 
 0.1.1 (2015-07-08)
 ------------------
