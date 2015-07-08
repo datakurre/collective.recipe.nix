@@ -40,14 +40,14 @@ And example ``./buildout.cfg``:
 
     [instance]
     recipe = plone.recipe.zope2instance
-    eggs =
-        Plone
-        plone.recipe.zope2instance
+    eggs = Plone
     user = admin:admin
 
     [plone]
     recipe = collective.recipe.nix
-    eggs = ${instance:eggs}
+    eggs =
+        ${instance:eggs}
+        plone.recipe.zope2instance
 
     [zest.releaser]
     recipe = collective.recipe.nix
@@ -70,7 +70,8 @@ Now you should be able to run zest.releaser with:
    $ nix-shell zest.releaser.nix --run fullrelease
 
 And launching python with all Plone dependencies (after removing
-buildout created site.py) with:
+buildout created site.py to remove references from buildout installed
+eggs) with:
 
 .. code:: bash
 

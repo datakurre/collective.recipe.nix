@@ -5,7 +5,8 @@ import zc.recipe.egg
 
 NIXPKGS_WHITELIST = {
     'lxml': 'pythonPackages.lxml',
-    'Pillow': 'pythonPackages.pillow'
+    'Pillow': 'pythonPackages.pillow',
+    'python-ldap': 'pythonPackages.ldap'
 }
 
 # Zope2 has circular dependencies with its dependencies. Also Products and
@@ -22,6 +23,8 @@ BUILD_INPUTS = {
     'Products.DCWorkflow': ['eggtestinfo'],
     'Products.CMFUid': ['eggtestinfo'],
     'Products.CMFActionIcons': ['eggtestinfo'],
+    'dataflake.fakeldap': ['pythonPackages."setuptools-git"'],
+    'Products.LDAPUserFolder': ['pythonPackages."setuptools-git"']
 }
 
 # And some of those required build inputs are not yet available at nixpkgs
