@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.1.1 (unreleased)
+0.1.1 (2015-07-08)
 ------------------
 
 - Add support for plone.app.ldap
