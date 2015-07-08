@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.2.1 (unreleased)
+0.3.0 (2015-07-08)
 ------------------
 
 - Change resulting derivation to be buildEnv with python.buildEnv to make it
