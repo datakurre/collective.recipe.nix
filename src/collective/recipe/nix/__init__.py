@@ -207,7 +207,7 @@ in with dependencies; stdenv.mkDerivation {{
 }}
 """.format(**substitutions))
 
-        with open(self.name + '.env.nix', 'w') as handle:
+        with open(self.name + '-env.nix', 'w') as handle:
             handle.write(output + """\
 }};
 in with dependencies; buildEnv {{
