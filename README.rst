@@ -6,7 +6,6 @@ a buildout eggs list. This is work in progress. Please, contribute_.
 
 .. _contribute: https://github.com/datakurre/collective.recipe.nix
 
-**This only works, for now, when all packages are available at PyPI.**
 
 Example of usage
 ----------------
@@ -85,3 +84,80 @@ interpreter:
 
     import plone.recipe.zope2instance.ctl
     plone.recipe.zope2instance.ctl.main(['-C', 'parts/instance/etc/zope.conf', 'fg'])
+
+
+Advanced configuration
+======================
+
+Adding other buildInputs:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   build-inputs =
+       redis
+
+Mapping buildInputs for generated Python derivations:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   build-inputs =
+      dataflake.fakeldap=pythonPackages."setuptools-git"
+
+or:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   build-inputs =
+      plone-inputs
+
+   [plone-inputs]
+   dataflake.fakeldap = pythonPackages."setuptools-git"
+
+Replacing otherwise generated Python derivations with existing nixpkgs
+derivations:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   nixpkgs =
+       python-ldap=pythonPackages.ldap
+
+or:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   nixpkgs =
+       plone-nixpkgs
+
+   [plone-nixpkgs]
+   python-ldap = pythonPackages.ldap
+
+Adding URLs for packages not available at PyPI:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   urls =
+       Plone=https://example.com/Plone-4.3.6.zip#md5=c370c0c8eace1081ec5b057b2c4149b7
+
+or:
+
+.. code:: cfg
+
+   [plone]
+   ...
+   urls =
+       plone-urls
+
+   [plone-urls]
+   Plone = https://example.com/Plone-4.3.6.zip#md5=c370c0c8eace1081ec5b057b2c4149b7
