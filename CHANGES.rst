@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.3.1 (unreleased)
+0.4.0 (2015-07-09)
 ------------------
 
 - Change to produce {name}-env.nix instead of {name}.env.nix as buildable
