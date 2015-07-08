@@ -69,10 +69,12 @@ Now you should be able to run zest.releaser with:
 
    $ nix-shell zest.releaser.nix --run fullrelease
 
-And launching python with all Plone dependencies with:
+And launching python with all Plone dependencies (after removing
+buildout created site.py) with:
 
 .. code:: bash
 
+   $ rm -f parts/instance/site.py parts/instance/site.pyc
    $ nix-shell plone.nix --run python
 
 And Plone could be started by entering the following lines into the
