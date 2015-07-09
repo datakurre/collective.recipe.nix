@@ -40,17 +40,6 @@ DERIVATIONS = {
 # Filter buildout supported source distributions from eggs and wheels
 SDIST_URL = re.compile('.*tar.gz$|.*zip$')
 
-# Move requirements from package to environment
-REQUIRES_BLACKLIST = re.compile('Zope2.*|Products.*|plone.*')
-
-# Zope2 has circular dependencies with its dependencies. Also Products and
-# plone -namespaces have circular dependencies every now and then.  To avoid
-# circular depedendencies in resulting nix expression, we simply drop all these
-# from propagatedBuildInputs and only add them into them into the final
-# derivation. This results in broken individual packages, but still makes them
-# work within the final derivation (as long as a dropped dependency breaks the
-# original build of the package).
-
 
 def normalize(s):
     # Normalize given derivation name and prefix it with '_' to avoid
@@ -60,6 +49,31 @@ def normalize(s):
 
 def listify(s):
     return filter(bool, map(str.strip, (s or '').split()))
+
+
+def decyclify(package, requirements, seen, ws):
+    # Recursively (DFS) build and check A to B dependency pairs to cyclic
+    # dependencies by B to A with any amount of steps ever happening. The
+    # found dependendy always wins and later are skipped in output.
+    def recurse(from_, to_, seen, ws):
+        for requirement in to_.requires():
+            requirement = ws.find(requirement)
+            key = '{0:s}-{1:s}'.format(*sorted([from_.project_name,
+                                                requirement.project_name]))
+            if key not in seen:
+                seen[key] = True
+                recurse(from_, requirement, seen, ws)
+
+    for requirement in requirements:
+        key = '{0:s}-{1:s}'.format(*sorted([package.project_name,
+                                            requirement.project_name]))
+        if key not in seen:
+            seen[key] = True
+            yield requirement
+
+    for requirement in requirements:
+        requirement = ws.find(requirement)
+        recurse(package, requirement, seen, ws)
 
 
 def spliturl(url):
@@ -82,6 +96,10 @@ class Nix(object):
         pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
         requirements, ws = self.egg.working_set()
         derivations = DERIVATIONS.copy()
+
+        # This is used to prevent cycles in nix dependenty tree by always
+        # letting the first dependency win
+        seen = {}
 
         # Parse direct buildInputs and mapped buildInputs from buildout
         build_inputs = BUILD_INPUTS.copy()
@@ -149,11 +167,6 @@ let dependencies = rec {
                 url = candidates[0]['url']
                 md5 = candidates[0]['md5_digest']
 
-            requirements += [
-                req.project_name for req in package.requires()
-                if REQUIRES_BLACKLIST.match(req.project_name)
-            ]
-
             substitutions = dict(
                 name=normalize(package.project_name),
                 package='%s-%s' % (package.project_name, package.version),
@@ -163,8 +176,7 @@ let dependencies = rec {
                 ),
                 requires='\n      '.join([
                     normalize(req.project_name)
-                    for req in package.requires()
-                    if not REQUIRES_BLACKLIST.match(req.project_name)
+                    for req in decyclify(package, package.requires(), seen, ws)
                 ]),
                 derivations='\n'.join(filter(bool, [
                     derivations.pop(req, '')

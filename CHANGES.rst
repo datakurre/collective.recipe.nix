@@ -4,15 +4,16 @@ Changelog
 0.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix to resolve cyclic dependencies by letting the first seen dependency win
+  and persist into resulting expression
+  [datakurre]
 
 0.4.0 (2015-07-09)
 ------------------
 
 - Change to produce {name}-env.nix instead of {name}.env.nix as buildable
   derivations
-  [datakurre]]
+  [datakurre]
 
 0.3.0 (2015-07-08)
 ------------------
