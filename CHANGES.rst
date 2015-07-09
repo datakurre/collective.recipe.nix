@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.4.1 (unreleased)
+0.5.0 (2015-07-09)
 ------------------
 
 - Fix to resolve cyclic dependencies by letting the first seen dependency win
