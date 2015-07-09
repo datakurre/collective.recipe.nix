@@ -34,7 +34,6 @@ And example ``./buildout.cfg``:
     parts =
         plone
         zest.releaser
-    develop = .
     versions = versions
 
     [instance]
