@@ -90,7 +90,26 @@ class Nix(object):
         self.buildout = buildout
         self.name = name
         self.options = options
+
+        # Parse propagatedBuildInputs and mapped buildInputs from buildout
+        propagated_eggs = []
+        propagated_build_inputs = {}
+        for section in listify(self.options.get('propagated-build-inputs')):
+            if section in self.buildout:
+                for key, value in self.buildout.get(section).items():
+                    propagated_build_inputs[key] = listify(value)
+                    propagated_eggs.extend(listify(value))
+            elif '=' in section:
+                # is not a section, but inline mapping
+                key, value = section.split('=', 1)
+                propagated_build_inputs[key] = listify(value)
+                propagated_eggs.extend(listify(value))
+
+        options = options.copy()
+        options['eggs'] = '\n'.join([options.get('eggs', ''),
+                                     '\n'.join(set(propagated_eggs))])
         self.egg = zc.recipe.egg.Scripts(buildout, name, options)
+        self.propagated_build_inputs = propagated_build_inputs
 
     def install(self):
         pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
@@ -111,10 +130,12 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                build_inputs[key] = [value.strip()]
+                build_inputs[key] = listify(value)
             else:
                 # is not a section, but a direct buildInput
                 build_inputs[None].append(section)
+
+        propagated_build_inputs = self.propagated_build_inputs
 
         # Parse Python package to nixpkgs mapping from buildout
         nixpkgs = NIXPKGS.copy()
@@ -125,7 +146,7 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                nixpkgs[key] = value.strip()
+                nixpkgs[key] = ' '.join(listify(value))
 
         # Parse Download urls from buildout
         urls = URLS.copy()
@@ -177,6 +198,9 @@ let dependencies = rec {
                 requires='\n      '.join([
                     normalize(req.project_name)
                     for req in decyclify(package, package.requires(), seen, ws)
+                ] + [
+                    normalize(project_name) for project_name
+                    in propagated_build_inputs.get(package.project_name, [])
                 ]),
                 derivations='\n'.join(filter(bool, [
                     derivations.pop(req, '')
