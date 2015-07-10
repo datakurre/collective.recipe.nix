@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.7.1 (unreleased)
+0.8.0 (2015-07-10)
 ------------------
 
 - Add support for comma separated list for inline build-inputs,
