@@ -91,7 +91,8 @@ class Nix(object):
         self.name = name
         self.options = options
 
-        # Parse propagatedBuildInputs and mapped buildInputs from buildout
+        # Parse propagatedBuildInputs from buildout here to pass them
+        # forward to zc.recipe.egg
         propagated_eggs = []
         propagated_build_inputs = {}
         for section in listify(self.options.get('propagated-build-inputs')):
@@ -135,6 +136,7 @@ class Nix(object):
                 # is not a section, but a direct buildInput
                 build_inputs[None].append(section)
 
+        # Get propagatedBuildInputs parsed already in __init__
         propagated_build_inputs = self.propagated_build_inputs
 
         # Parse Python package to nixpkgs mapping from buildout
@@ -260,7 +262,7 @@ in with dependencies; buildEnv {{
 }}
 """.format(**substitutions))
 
-        for package in requirements:
+        for package in listify(self.options.get('eggs')):
             with open(self.name + '-{0:s}.nix'.format(package), 'w') as handle:
                 handle.write(output + """\
 }};
