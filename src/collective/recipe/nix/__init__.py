@@ -116,6 +116,8 @@ class Nix(object):
         pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
         requirements, ws = self.egg.working_set()
         derivations = DERIVATIONS.copy()
+        requirements = [req for req in requirements
+                        if req in self.options.get('eggs', '')]
 
         # This is used to prevent cycles in nix dependenty tree by always
         # letting the first dependency win
@@ -230,8 +232,8 @@ let dependencies = rec {
             name=self.name,
             paths='\n    '.join(build_inputs[None]),
             extraLibs='\n        '.join(map(normalize, set(requirements))),
-            buildInputs='\n      '.join(map(normalize, set(requirements))
-                                        + build_inputs[None])
+            buildInputs='\n    '.join(map(normalize, set(requirements))
+                                      + build_inputs[None])
         )
 
         with open(self.name + '.nix', 'w') as handle:
@@ -262,7 +264,7 @@ in with dependencies; buildEnv {{
 }}
 """.format(**substitutions))
 
-        for package in listify(self.options.get('eggs')):
+        for package in requirements:
             with open(self.name + '-{0:s}.nix'.format(package), 'w') as handle:
                 handle.write(output + """\
 }};
