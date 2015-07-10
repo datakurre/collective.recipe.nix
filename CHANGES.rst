@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.8.1 (unreleased)
+0.9.0 (2015-07-10)
 ------------------
 
 - Refactor to handle properly setuptools requires extras
