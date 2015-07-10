@@ -4,8 +4,9 @@ Changelog
 0.7.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add support for comma separated list for inline build-inputs,
+  propagated-build-inputs and nixpkgs
+  [datakurre]
 
 0.7.0 (2015-07-10)
 ------------------
