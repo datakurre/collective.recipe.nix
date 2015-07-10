@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.1 (unreleased)
+0.7.0 (2015-07-10)
 ------------------
 
 - Add option to inject propagatedBuildInputs to enable extra package-dependent
