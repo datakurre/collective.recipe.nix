@@ -236,6 +236,13 @@ in with dependencies; buildEnv {{
 }}
 """.format(**substitutions))
 
+        for package in requirements:
+            with open(self.name + '-{0:s}.nix'.format(package), 'w') as handle:
+                handle.write(output + """\
+}};
+in with dependencies; {package:s}
+""".format(package=normalize(package)))
+
         return ()
 
     update = install
