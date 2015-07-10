@@ -104,7 +104,7 @@ class Nix(object):
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
                 propagated_build_inputs[key] = listify(value)
-                propagated_eggs.extend(listify(value))
+                propagated_eggs.extend(value.split(','))
 
         options = options.copy()
         options['eggs'] = '\n'.join([options.get('eggs', ''),
@@ -133,7 +133,7 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                build_inputs[key] = listify(value)
+                build_inputs[key] = value.split(',')
             else:
                 # is not a section, but a direct buildInput
                 build_inputs[None].append(section)
@@ -150,7 +150,7 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                nixpkgs[key] = ' '.join(listify(value))
+                nixpkgs[key] = ' '.join(value.split(','))
 
         # Parse Download urls from buildout
         urls = URLS.copy()
