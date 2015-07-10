@@ -97,7 +97,7 @@ Adding other buildInputs:
    build-inputs =
        redis
 
-Mapping buildInputs for generated Python derivations:
+Mapping nixpkgs buildInputs for generated Python expressions:
 
 .. code:: cfg
 
@@ -106,20 +106,18 @@ Mapping buildInputs for generated Python derivations:
    build-inputs =
       dataflake.fakeldap=pythonPackages."setuptools-git"
 
-or:
+Mapping propagatedBuildInputs for generated Python expressions:
 
 .. code:: cfg
 
-   [plone]
+   [zest.releaser]
    ...
-   build-inputs =
-      plone-inputs
+   propagated-build-inputs =
+      zest.releaser=zest.pocompile
 
-   [plone-inputs]
-   dataflake.fakeldap = pythonPackages."setuptools-git"
 
-Replacing otherwise generated Python derivations with existing nixpkgs
-derivations:
+Replacing otherwise generated Python expressions with existing nixpkgs
+expressions:
 
 .. code:: cfg
 
@@ -127,18 +125,6 @@ derivations:
    ...
    nixpkgs =
        python-ldap=pythonPackages.ldap
-
-or:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   nixpkgs =
-       plone-nixpkgs
-
-   [plone-nixpkgs]
-   python-ldap = pythonPackages.ldap
 
 Adding URLs for packages not available at PyPI:
 
@@ -155,8 +141,7 @@ or:
 
    [plone]
    ...
-   urls =
-       plone-urls
+   urls = urls
 
-   [plone-urls]
+   [urls]
    Plone = https://example.com/Plone-4.3.6.zip#md5=c370c0c8eace1081ec5b057b2c4149b7
