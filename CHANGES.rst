@@ -4,8 +4,9 @@ Changelog
 0.6.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add option to inject propagatedBuildInputs to enable extra package-dependent
+  additional features
+  [datakurre]
 
 0.6.0 (2015-07-10)
 ------------------
