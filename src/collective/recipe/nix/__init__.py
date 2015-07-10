@@ -3,6 +3,8 @@ import re
 import xmlrpclib
 import zc.recipe.egg
 
+from pkg_resources import Requirement
+
 # Map requirements to nixpkgs
 NIXPKGS = {
     'lxml': 'pythonPackages.lxml',
@@ -24,7 +26,7 @@ URLS = {
 }
 
 # And some of those required build inputs are not yet available at nixpkgs
-DERIVATIONS = {
+EXPRESSIONS = {
     'eggtestinfo': """\
   eggtestinfo = buildPythonPackage {
     name = "eggtestinfo-0.3";
@@ -41,39 +43,58 @@ DERIVATIONS = {
 SDIST_URL = re.compile('.*tar.gz$|.*zip$')
 
 
+def prefix(s, prefix='_'):
+    return prefix + s
+
+
+def strip_extras(s):
+    return re.sub('\[[^\]]*\]', '', s)
+
+
 def normalize(s):
     # Normalize given derivation name and prefix it with '_' to avoid
     # possible nixpkgs conflicts
-    return re.sub('[\.\-\s]', '_', '_' + s)
+    return re.sub('[\]]', '', re.sub('[\.\-\s\[]', '_', s))
 
 
 def listify(s):
     return filter(bool, map(str.strip, (s or '').split()))
 
 
-def decyclify(package, requirements, seen, ws):
-    # Recursively (DFS) build and check A to B dependency pairs to cyclic
-    # dependencies by B to A with any amount of steps ever happening. The
-    # found dependendy always wins and later are skipped in output.
-    def recurse(from_, to_, seen, ws):
-        for requirement in to_.requires():
-            requirement = ws.find(requirement)
-            key = '{0:s}-{1:s}'.format(*sorted([from_.project_name,
-                                                requirement.project_name]))
-            if key not in seen:
-                seen[key] = True
-                recurse(from_, requirement, seen, ws)
-
-    for requirement in requirements:
-        key = '{0:s}-{1:s}'.format(*sorted([package.project_name,
-                                            requirement.project_name]))
+def see(project_name, requirements, ws, seen):
+    for req in requirements:
+        key = '{0:s}-{1:s}'.format(*sorted([project_name, req.project_name]))
         if key not in seen:
             seen[key] = True
-            yield requirement
+            see(project_name, ws.find(req).requires(req.extras), ws, seen)
+
+
+def resolve_dependencies(requirements, ws, requires=None, seen=None):
+
+    # Init state variables
+    if seen is None:
+        seen = {}
+    if requires is None:
+        requires = {}
 
     for requirement in requirements:
-        requirement = ws.find(requirement)
-        recurse(package, requirement, seen, ws)
+        if requirement.project_name in requires:
+            continue
+
+        distribution = ws.find(requirement)
+        requires[distribution.project_name] = []
+        distribution_requires = distribution.requires(requirement.extras)
+
+        for req in distribution_requires:
+            key = '{0:s}-{1:s}'.format(*sorted([distribution.project_name,
+                                                req.project_name]))
+            if key not in seen:
+                requires[distribution.project_name].append(req.project_name)
+
+        see(distribution.project_name, distribution_requires, ws, seen)
+        resolve_dependencies(distribution_requires, ws, requires, seen)
+
+    return requires
 
 
 def spliturl(url):
@@ -90,9 +111,10 @@ class Nix(object):
         self.buildout = buildout
         self.name = name
         self.options = options
+        self.pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
 
-        # Parse propagatedBuildInputs from buildout here to pass them
-        # forward to zc.recipe.egg
+        # Parse propagatedBuildInputs from buildout already in __init__ to pass
+        # found additional eggs forward to zc.recipe.egg
         propagated_eggs = []
         propagated_build_inputs = {}
         for section in listify(self.options.get('propagated-build-inputs')):
@@ -106,42 +128,71 @@ class Nix(object):
                 propagated_build_inputs[key] = listify(value)
                 propagated_eggs.extend(value.split(','))
 
+        # Update options['eggs'] with found additional propagatedBuildInputs
         options = options.copy()
         options['eggs'] = '\n'.join([options.get('eggs', ''),
                                      '\n'.join(set(propagated_eggs))])
+
+        # Save revolved egg and parsed propagatedBuildInputs
         self.egg = zc.recipe.egg.Scripts(buildout, name, options)
         self.propagated_build_inputs = propagated_build_inputs
 
     def install(self):
-        pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
+        expressions = EXPRESSIONS.copy()
         requirements, ws = self.egg.working_set()
-        derivations = DERIVATIONS.copy()
-        requirements = [req for req in requirements
-                        if req in self.options.get('eggs', '')]
+        packages = {}
 
-        # This is used to prevent cycles in nix dependenty tree by always
-        # letting the first dependency win
-        seen = {}
+        # Init package metadata
+        for distribution in ws:
+            packages[distribution.project_name] = {
+                'key': prefix(normalize(distribution.project_name)),
+                'name': '%s-%s' % (distribution.project_name,
+                                   distribution.version),
+                'buildInputs': BUILD_INPUTS.get(distribution.project_name, []),
+                'propagatedBuildInputs': []
+            }
 
-        # Parse direct buildInputs and mapped buildInputs from buildout
-        build_inputs = BUILD_INPUTS.copy()
-        build_inputs.setdefault(None, [])
+        # resolve env buildInputs and package buildInputs from buildout
+        env_build_inputs = []
         for section in listify(self.options.get('build-inputs')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
-                    build_inputs[key] = listify(value)
+                    packages[key]['buildInputs'] = listify(value)
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                build_inputs[key] = value.split(',')
+                packages[key]['buildInputs'] = value.split(',')
             else:
-                # is not a section, but a direct buildInput
-                build_inputs[None].append(section)
+                # is not a section, but an environment direct buildInput
+                env_build_inputs.append(section)
 
-        # Get propagatedBuildInputs parsed already in __init__
-        propagated_build_inputs = self.propagated_build_inputs
+        # Resolve propagatedBuildInputs from package dependencies and buildout
+        for project_name, requires in resolve_dependencies(
+                map(Requirement.parse, requirements), ws).items():
+            buildout_requires = self.propagated_build_inputs.get(project_name)
+            packages[project_name]['propagatedBuildInputs'] = \
+                map(prefix, map(normalize, set(
+                    requires + (buildout_requires or []))))
 
-        # Parse Python package to nixpkgs mapping from buildout
+        # Parse package download urls and md5s from buildout
+        for project_name, url in URLS.items():
+            packages[project_name]['url'] = url
+        for section in listify(self.options.get('urls')):
+            if section in self.buildout:
+                for key, value in self.buildout.get(section).items():
+                    if '#' in value:
+                        url, md5 = spliturl(value.strip())
+                        packages[key]['url'] = url
+                        packages[key]['md5'] = md5
+            elif '=' in section:
+                # is not a section, but inline mapping
+                key, value = section.split('=', 1)
+                if '#' in value:
+                    url, md5 = spliturl(value.strip())
+                    packages[key]['url'] = url
+                    packages[key]['md5'] = md5
+
+        # Parse package to nixpkgs mapping from buildout
         nixpkgs = NIXPKGS.copy()
         for section in listify(self.options.get('nixpkgs')):
             if section in self.buildout:
@@ -152,89 +203,78 @@ class Nix(object):
                 key, value = section.split('=', 1)
                 nixpkgs[key] = ' '.join(value.split(','))
 
-        # Parse Download urls from buildout
-        urls = URLS.copy()
-        for section in listify(self.options.get('urls')):
-            if section in self.buildout:
-                for key, value in self.buildout.get(section).items():
-                    if '#' in value:
-                        urls[key] = value.strip()
-            elif '=' in section:
-                # is not a section, but inline mapping
-                key, value = section.split('=', 1)
-                if '#' in value:
-                    urls[key] = value.strip()
-
         output = """\
 with import <nixpkgs> {};
 let dependencies = rec {
 """
-        for package in ws:
+        for distribution in ws:
 
-            if package.project_name in nixpkgs:
+            # For mapped packages, use existing nixpkgs package instead
+            if distribution.project_name in nixpkgs:
                 output += """\
-  {name:s} = {nixpkgs_name:s};
-""".format(name=normalize(package.project_name),
-           nixpkgs_name=nixpkgs[package.project_name])
+  {package_name:s} = {nixpkgs_package_name:s};
+""".format(package_name=prefix(normalize(distribution.project_name)),
+           nixpkgs_package_name=nixpkgs[distribution.project_name])
                 continue
 
-            if package.project_name in urls:
-                url, md5 = spliturl(urls[package.project_name])
-            else:
-                candidates = [
-                    data for data in pypi.release_urls(
-                        package.project_name, package.version)
-                    if SDIST_URL.match(data['url'])
-                ]
-                assert candidates,\
-                    "Package {0:s}-{1:s} not found at PyPI".format(
-                        package.project_name, package.version)
-                url = candidates[0]['url']
-                md5 = candidates[0]['md5_digest']
+            # Build expression for package
+            data = packages[distribution.project_name]
 
+            # Resolve URL and MD5
+            if not 'url' or not 'md5' in data:
+                releases = [release for release in self.pypi.release_urls(
+                            distribution.project_name, distribution.version)
+                            if SDIST_URL.match(release['url'])]
+                assert releases,\
+                    "Distribution {0:s}-{1:s} not found at PyPI".format(
+                        distribution.project_name, distribution.version)
+                data['url'] = releases[0]['url']
+                data['md5'] = releases[0]['md5_digest']
+
+            # Resolve extra expressions
+            data['extras'] = filter(bool, [
+                expressions.pop(req, '') for req in data['buildInputs']])
+
+            # Build substitution dictionary
             substitutions = dict(
-                name=normalize(package.project_name),
-                package='%s-%s' % (package.project_name, package.version),
-                url=url, md5=md5,
-                inputs='\n      '.join(
-                    build_inputs.get(package.project_name, [])
-                ),
-                requires='\n      '.join([
-                    normalize(req.project_name)
-                    for req in decyclify(package, package.requires(), seen, ws)
-                ] + [
-                    normalize(project_name) for project_name
-                    in propagated_build_inputs.get(package.project_name, [])
-                ]),
-                derivations='\n'.join(filter(bool, [
-                    derivations.pop(req, '')
-                    for req in build_inputs.get(package.project_name, [])
-                ])))
+                key=data['key'], name=data['name'],
+                url=data['url'], md5=data['md5'],
+                buildInputs='\n      '.join(data['buildInputs']),
+                propagatedBuildInputs=
+                '\n      '.join(data['propagatedBuildInputs']),
+                extras='\n'.join(data['extras']))
 
             output += """\
-  {name:s} = buildPythonPackage {{
-    name = "{package:s}";
+  {key:s} = buildPythonPackage {{
+    name = "{name:s}";
     src = fetchurl {{
         url = "{url:s}";
         md5 = "{md5:s}";
     }};
     buildInputs = [
-      {inputs:s}
+      {buildInputs:s}
     ];
     propagatedBuildInputs = [
-      {requires:s}
+      {propagatedBuildInputs:s}
     ];
     doCheck = false;
   }};
-{derivations:s}""".format(**substitutions)
+{extras:s}""".format(**substitutions)
 
+        # Filter direct requirements
+        requirements = [req for req in requirements
+                        if req in self.options.get('eggs', '')]
+
+        # Build substitution dictionary
         substitutions = dict(
             name=self.name,
-            paths='\n    '.join(build_inputs[None]),
-            extraLibs='\n        '.join(map(normalize, set(requirements))),
-            buildInputs='\n    '.join(map(normalize, set(requirements))
-                                      + build_inputs[None])
-        )
+            paths='\n    '.join(env_build_inputs),
+            extraLibs='\n        '.join(
+                map(prefix, map(normalize, map(strip_extras,
+                    set(requirements))))),
+            buildInputs='\n    '.join(
+                map(prefix, map(normalize, map(strip_extras,
+                    set(requirements)))) + env_build_inputs))
 
         with open(self.name + '.nix', 'w') as handle:
             handle.write(output + """\
@@ -264,12 +304,13 @@ in with dependencies; buildEnv {{
 }}
 """.format(**substitutions))
 
-        for package in requirements:
-            with open(self.name + '-{0:s}.nix'.format(package), 'w') as handle:
+        for req in requirements:
+            filename = self.name + '-{0:s}.nix'.format(normalize(req))
+            with open(filename, 'w') as handle:
                 handle.write(output + """\
 }};
-in with dependencies; {package:s}
-""".format(package=normalize(package)))
+in with dependencies; {key:s}
+""".format(key=prefix(normalize(strip_extras(req)))))
 
         return ()
 
