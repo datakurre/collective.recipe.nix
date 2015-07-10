@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.5.1 (unreleased)
+0.6.0 (2015-07-10)
 ------------------
 
 - Add to create installable python package expression for each listed egg
