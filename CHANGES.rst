@@ -4,8 +4,8 @@ Changelog
 0.5.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add to create installable python package expression for each listed egg
+  [datakurre]
 
 0.5.0 (2015-07-09)
 ------------------
