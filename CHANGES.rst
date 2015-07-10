@@ -4,7 +4,7 @@ Changelog
 0.8.1 (unreleased)
 ------------------
 
-- Fix to normalize brackets in package [extras]
+- Refactor to handle properly setuptools requires extras
   [datakurre]
 
 0.8.0 (2015-07-10)
