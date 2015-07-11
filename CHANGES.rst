@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.9.1 (unreleased)
+0.9.1 (2015-07-11)
 ------------------
 
 - Fix issue where package requirement in wrong case caused error
