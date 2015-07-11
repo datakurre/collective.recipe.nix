@@ -4,8 +4,10 @@ Changelog
 0.9.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix issue where package requirement in wrong case caused error
+- Fix issue where buildout propagated-build-inputs did not support
+  cyclic requirements (required for injecting 'add-on' packages)
+  [datakurre]
 
 0.9.0 (2015-07-10)
 ------------------
