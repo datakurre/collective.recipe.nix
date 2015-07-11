@@ -6,6 +6,12 @@ a buildout eggs list. This is work in progress. Please, contribute_.
 
 .. _contribute: https://github.com/datakurre/collective.recipe.nix
 
+Currently the recipe generates three kind of expressions:
+
+* default [name].nix usable with nix-shell
+* buildEnv based [name]-env.nix usable with nix-build
+* buildPythonPackage based [name]-package.nix usable with nix-env -i -f
+
 
 Example of usage
 ----------------
@@ -16,7 +22,6 @@ At first, define ``./default.nix`` with buildout::
       myEnv = stdenv.mkDerivation {
         name = "myEnv";
         buildInputs = [
-          pythonPackages.readline
           pythonPackages.buildout
         ];
         shellHook = ''
@@ -33,7 +38,7 @@ And example ``./buildout.cfg``:
     extends = https://dist.plone.org/release/4-latest/versions.cfg
     parts =
         plone
-        zest.releaser
+        releaser
     versions = versions
 
     [instance]
@@ -47,9 +52,9 @@ And example ``./buildout.cfg``:
         ${instance:eggs}
         plone.recipe.zope2instance
 
-    [zest.releaser]
+    [releaser]
     recipe = collective.recipe.nix
-    eggs = zest.releaser
+    eggs = zest.releaser[recommended]
 
     [versions]
     zc.buildout =
@@ -61,7 +66,7 @@ Run the buildout:
 
    $ nix-shell --run buildout
 
-Now you should be able to run zest.releaser with:
+Now you should be able to run zest.releaser with recommended plugins with:
 
 .. code:: bash
 
@@ -76,7 +81,7 @@ eggs) with:
    $ rm -f parts/instance/site.py parts/instance/site.pyc
    $ nix-shell plone.nix --run python
 
-And Plone could be started by entering the following lines into the
+Plone could be started by entering the following lines into the
 interpreter:
 
 .. code:: python
@@ -88,7 +93,7 @@ interpreter:
 Advanced configuration
 ======================
 
-Adding other buildInputs:
+Adding additional nixpkgs buildInputs:
 
 .. code:: cfg
 
@@ -106,15 +111,15 @@ Mapping nixpkgs buildInputs for generated Python expressions:
    build-inputs =
       dataflake.fakeldap=pythonPackages."setuptools-git"
 
-Mapping propagatedBuildInputs for generated Python expressions:
+Mapping Python packages as propagatedBuildInputs for generated Python
+expressions:
 
 .. code:: cfg
 
-   [zest.releaser]
+   [robot]
    ...
    propagated-build-inputs =
-      zest.releaser=zest.pocompile
-
+      robotframework=robotframework-selenium2library
 
 Replacing otherwise generated Python expressions with existing nixpkgs
 expressions:

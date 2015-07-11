@@ -47,14 +47,10 @@ def prefix(s, prefix='_'):
     return prefix + s
 
 
-def strip_extras(s):
-    return re.sub('\[[^\]]*\]', '', s)
-
-
 def normalize(s):
     # Normalize given derivation name and prefix it with '_' to avoid
     # possible nixpkgs conflicts
-    return re.sub('[\]]', '', re.sub('[\.\-\s\[]', '_', s))
+    return re.sub('[\.\-\s\[]', '_', s)
 
 
 def listify(s):
@@ -63,36 +59,42 @@ def listify(s):
 
 def see(project_name, requirements, ws, seen):
     for req in requirements:
-        key = '{0:s}-{1:s}'.format(*sorted([project_name, req.project_name]))
+        key = '{0:s}-{1:s}'.format(*sorted([
+            normalize(project_name), normalize(req.project_name)]))
         if key not in seen:
             seen[key] = True
             see(project_name, ws.find(req).requires(req.extras), ws, seen)
 
 
-def resolve_dependencies(requirements, ws, requires=None, seen=None):
+def resolve_dependencies(requirements, ws, inject, requires=None, seen=None):
 
-    # Init state variables
+    # Init
     if seen is None:
         seen = {}
     if requires is None:
         requires = {}
 
+    # Resolve
     for requirement in requirements:
-        if requirement.project_name in requires:
+        distribution = ws.find(requirement)
+        name = distribution.project_name
+
+        if name in requires:
             continue
 
-        distribution = ws.find(requirement)
-        requires[distribution.project_name] = []
+        requires[name] = []
+
         distribution_requires = distribution.requires(requirement.extras)
+        distribution_requires += inject.get(normalize(name), [])
 
-        for req in distribution_requires:
-            key = '{0:s}-{1:s}'.format(*sorted([distribution.project_name,
-                                                req.project_name]))
-            if key not in seen:
-                requires[distribution.project_name].append(req.project_name)
+        for req in [normalize(ws.find(r).project_name)
+                    for r in distribution_requires]:
+            key = '{0:s}-{1:s}'.format(*sorted([normalize(name), req]))
+            if key not in seen and req not in requires[name]:
+                requires[name].append(req)
 
-        see(distribution.project_name, distribution_requires, ws, seen)
-        resolve_dependencies(distribution_requires, ws, requires, seen)
+        see(name, distribution_requires, ws, seen)
+        resolve_dependencies(distribution_requires, ws, inject, requires, seen)
 
     return requires
 
@@ -125,7 +127,8 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                propagated_build_inputs[key] = listify(value)
+                propagated_build_inputs.setdefault(key, [])
+                propagated_build_inputs[key].extend(value.split(','))
                 propagated_eggs.extend(value.split(','))
 
         # Update options['eggs'] with found additional propagatedBuildInputs
@@ -144,7 +147,7 @@ class Nix(object):
 
         # Init package metadata
         for distribution in ws:
-            packages[distribution.project_name] = {
+            packages[normalize(distribution.project_name)] = {
                 'key': prefix(normalize(distribution.project_name)),
                 'name': '%s-%s' % (distribution.project_name,
                                    distribution.version),
@@ -157,29 +160,36 @@ class Nix(object):
         for section in listify(self.options.get('build-inputs')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
+                    key = normalize(ws.find(
+                        Requirement.parse(key)).project_name)
                     packages[key]['buildInputs'] = listify(value)
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
-                packages[key]['buildInputs'] = value.split(',')
+                key = normalize(ws.find(Requirement.parse(key)).project_name)
+                packages[key].setdefault('buildInputs', [])
+                packages[key]['buildInputs'].extend(value.split(','))
             else:
                 # is not a section, but an environment direct buildInput
                 env_build_inputs.append(section)
 
         # Resolve propagatedBuildInputs from package dependencies and buildout
         for project_name, requires in resolve_dependencies(
-                map(Requirement.parse, requirements), ws).items():
-            buildout_requires = self.propagated_build_inputs.get(project_name)
-            packages[project_name]['propagatedBuildInputs'] = \
-                map(prefix, map(normalize, set(
-                    requires + (buildout_requires or []))))
+                map(Requirement.parse, requirements), ws,
+                dict([(normalize(key), map(Requirement.parse, value))
+                      for key, value
+                      in self.propagated_build_inputs.items()])).items():
+            packages[normalize(project_name)]['propagatedBuildInputs'] = \
+                map(prefix, map(normalize, requires))
 
         # Parse package download urls and md5s from buildout
         for project_name, url in URLS.items():
-            packages[project_name]['url'] = url
+            packages[normalize(project_name)]['url'] = url
         for section in listify(self.options.get('urls')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
+                    key = normalize(ws.find(
+                        Requirement.parse(key)).project_name)
                     if '#' in value:
                         url, md5 = spliturl(value.strip())
                         packages[key]['url'] = url
@@ -187,6 +197,7 @@ class Nix(object):
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
+                key = normalize(ws.find(Requirement.parse(key)).project_name)
                 if '#' in value:
                     url, md5 = spliturl(value.strip())
                     packages[key]['url'] = url
@@ -197,10 +208,13 @@ class Nix(object):
         for section in listify(self.options.get('nixpkgs')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
+                    key = normalize(ws.find(
+                        Requirement.parse(key)).project_name)
                     nixpkgs[key] = ' '.join(listify(value))
             elif '=' in section:
                 # is not a section, but inline mapping
                 key, value = section.split('=', 1)
+                key = normalize(ws.find(Requirement.parse(key)).project_name)
                 nixpkgs[key] = ' '.join(value.split(','))
 
         output = """\
@@ -218,13 +232,18 @@ let dependencies = rec {
                 continue
 
             # Build expression for package
-            data = packages[distribution.project_name]
+            data = packages[normalize(distribution.project_name)]
 
             # Resolve URL and MD5
             if not 'url' or not 'md5' in data:
                 releases = [release for release in self.pypi.release_urls(
                             distribution.project_name, distribution.version)
                             if SDIST_URL.match(release['url'])]
+                if not releases:
+                    releases = [release for release in self.pypi.release_urls(
+                                distribution.project_name.replace('-', '_'),
+                                distribution.version)
+                                if SDIST_URL.match(release['url'])]
                 assert releases,\
                     "Distribution {0:s}-{1:s} not found at PyPI".format(
                         distribution.project_name, distribution.version)
@@ -262,7 +281,8 @@ let dependencies = rec {
 {extras:s}""".format(**substitutions)
 
         # Filter direct requirements
-        requirements = [req for req in requirements
+        requirements = [ws.find(Requirement.parse(req)).project_name
+                        for req in requirements
                         if req in self.options.get('eggs', '')]
 
         # Build substitution dictionary
@@ -270,11 +290,10 @@ let dependencies = rec {
             name=self.name,
             paths='\n    '.join(env_build_inputs),
             extraLibs='\n        '.join(
-                map(prefix, map(normalize, map(strip_extras,
-                    set(requirements))))),
+                map(prefix, map(normalize, set(requirements)))),
             buildInputs='\n    '.join(
-                map(prefix, map(normalize, map(strip_extras,
-                    set(requirements)))) + env_build_inputs))
+                map(prefix, map(normalize, set(requirements)))
+                + env_build_inputs))
 
         with open(self.name + '.nix', 'w') as handle:
             handle.write(output + """\
@@ -310,7 +329,7 @@ in with dependencies; buildEnv {{
                 handle.write(output + """\
 }};
 in with dependencies; {key:s}
-""".format(key=prefix(normalize(strip_extras(req)))))
+""".format(key=prefix(normalize(req))))
 
         return ()
 
