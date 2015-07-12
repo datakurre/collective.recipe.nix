@@ -239,10 +239,22 @@ let dependencies = rec {
                 releases = [release for release in self.pypi.release_urls(
                             distribution.project_name, distribution.version)
                             if SDIST_URL.match(release['url'])]
+                # XXX: Sometimes package cannot be found with its project name
+                # from PyPI. This should be refactored to be more generic.
                 if not releases:
                     releases = [release for release in self.pypi.release_urls(
                                 distribution.project_name.replace('-', '_'),
                                 distribution.version)
+                                if SDIST_URL.match(release['url'])]
+                if not releases:
+                    releases = [release for release in self.pypi.release_urls(
+                                distribution.project_name.capitalize(),
+                                distribution.version)
+                                if SDIST_URL.match(release['url'])]
+                if not releases:
+                    releases = [release for release in self.pypi.release_urls(
+                                distribution.project_name,
+                                distribution.version + 'a')
                                 if SDIST_URL.match(release['url'])]
                 assert releases,\
                     "Distribution {0:s}-{1:s} not found at PyPI".format(
