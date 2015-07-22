@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.9.4 (unreleased)
-------------------
+0.10.0 (2015-07-22)
+-------------------
 
 - Fix issue where nixpkgs mappings lookup failed because of non-normalized
   lookup
