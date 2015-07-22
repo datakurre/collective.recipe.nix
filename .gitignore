@@ -1,6 +1,8 @@
 syntax:glob
 *.egg-info
 *.pyc
+*.nix
+*.nix.*
 .DS_Store
 .hgignore
 .idea
