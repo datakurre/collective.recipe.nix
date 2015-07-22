@@ -225,11 +225,11 @@ let dependencies = rec {
         for distribution in ws:
 
             # For mapped packages, use existing nixpkgs package instead
-            if distribution.project_name in nixpkgs:
+            if normalize(distribution.project_name) in nixpkgs:
                 output += """\
   {package_name:s} = {nixpkgs_package_name:s};
 """.format(package_name=prefix(normalize(distribution.project_name)),
-           nixpkgs_package_name=nixpkgs[distribution.project_name])
+           nixpkgs_package_name=nixpkgs[normalize(distribution.project_name)])
                 continue
 
             # Build expression for package
