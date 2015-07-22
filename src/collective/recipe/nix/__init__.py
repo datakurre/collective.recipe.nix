@@ -112,7 +112,7 @@ class Nix(object):
 
     def __init__(self, buildout, name, options):
         self.buildout = buildout
-        self.name = (option.get('name') or '').strip() or name
+        self.name = (options.get('name') or '').strip() or name
         self.options = options
         self.pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
 
