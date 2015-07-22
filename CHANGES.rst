@@ -4,8 +4,8 @@ Changelog
 0.9.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix a few more issues where package was not found at PyPI
+  [datakurre]
 
 0.9.2 (2015-07-12)
 ------------------
