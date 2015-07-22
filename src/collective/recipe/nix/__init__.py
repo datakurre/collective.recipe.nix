@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+import hashlib
+import os
+import urllib
 import re
-import xmlrpclib
 import zc.recipe.egg
+import zc.buildout.easy_install
 
 from pkg_resources import Requirement
-from pkg_resources import parse_version
+
 
 # Map requirements to nixpkgs
 NIXPKGS = {
@@ -112,9 +115,22 @@ class Nix(object):
 
     def __init__(self, buildout, name, options):
         self.buildout = buildout
-        self.name = (options.get('name') or '').strip() or name
+        self.name = name
         self.options = options
-        self.pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi')
+
+        # Set allowed outputs
+        self.outputs = listify(options.get('outputs', '') or '')
+
+        # Set allow cached flag
+        self.allow_from_cache = (
+            options.get('allow-from-cache', '').strip().lower()
+            in ('true', 'yes', 'on', '1')
+        )
+
+        # Set filename prefix
+        self.prefix = os.path.join(
+            (options.get('prefix') or '').strip(),
+            (options.get('name') or '').strip() or name)
 
         # Parse propagatedBuildInputs from buildout already in __init__ to pass
         # found additional eggs forward to zc.recipe.egg
@@ -140,6 +156,14 @@ class Nix(object):
         # Save revolved egg and parsed propagatedBuildInputs
         self.egg = zc.recipe.egg.Scripts(buildout, name, options)
         self.propagated_build_inputs = propagated_build_inputs
+
+        # Create index
+        buildout = buildout.get('buildout', {}) or {}
+        # noinspection PyProtectedMember
+        self.index = zc.buildout.easy_install._get_index(
+            (buildout.get('index', None) or '').strip() or None,
+            listify(buildout.get('find-links', None) or ''),
+            listify(buildout.get('allow-hosts', None) or '') or ('*',))
 
     def install(self):
         expressions = EXPRESSIONS.copy()
@@ -205,7 +229,8 @@ class Nix(object):
                     packages[key]['md5'] = md5
 
         # Parse package to nixpkgs mapping from buildout
-        nixpkgs = NIXPKGS.copy()
+        nixpkgs = dict([(normalize(key), value) for key, value
+                        in NIXPKGS.copy().items()])
         for section in listify(self.options.get('nixpkgs')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
@@ -236,38 +261,48 @@ let dependencies = rec {
             data = packages[normalize(distribution.project_name)]
 
             # Resolve URL and MD5
-            if not 'url' or 'md5' not in data:
-                names = [
-                    distribution.project_name,
-                    distribution.project_name.replace('-', '_'),
-                    distribution.project_name.capitalize(),
-                    distribution.project_name.capitalize().replace('-', '_'),
-                ]
-                found_name, found_version = None, None
-                for name in set(names):
-                    for version in sorted(  # find best matching version
-                            self.pypi.package_releases(name, True)):
-                        found_name = name
-                        if parse_version(version) == \
-                                parse_version(distribution.version):
-                            found_version = version
-                            break  # break on exact match
-                        if found_version is None:
-                            found_version = version
-                        if parse_version(found_version) <= \
-                               parse_version(version) <= \
-                               parse_version(distribution.version):
-                            found_version = version
-                    if found_name is not None:
+            if 'url' not in data or 'md5' not in data:
+                requirement = Requirement.parse(
+                    '{0:s}=={1:s}'.format(distribution.project_name,
+                                          distribution.version))
+
+                # noinspection PyProtectedMember
+                indexes = zc.buildout.easy_install._indexes.values()
+                indexes.remove(self.index)  # move our index to last
+
+                for index in indexes + [self.index]:
+                    if 'url' in data:
                         break
-                releases = [release for release in self.pypi.release_urls(
-                            found_name, found_version)
-                            if SDIST_URL.match(release['url'])]
-                assert releases,\
-                    "Distribution {0:s}-{1:s} not found at PyPI".format(
+
+                    if index is self.index:
+                        index.obtain(requirement)
+
+                    for dist in index[requirement.key]:
+                        if dist in requirement:
+                            url, md5 = spliturl(dist.location)
+
+                            if not SDIST_URL.match(url):
+                                continue
+
+                            if dist.location.startswith('http'):
+                                data['url'], data['md5'] = url, md5
+                                if not self.allow_from_cache:
+                                    break
+
+                            if self.allow_from_cache and \
+                                    os.path.isfile(dist.location):
+                                data['url'], data['md5'] = url, md5
+                                data['url'] = 'file://' + data['url']
+                                break
+
+                assert data['url'], \
+                    "Distribution {0:s}-{1:s} not found".format(
                         distribution.project_name, distribution.version)
-                data['url'] = releases[0]['url']
-                data['md5'] = releases[0]['md5_digest']
+
+                if not data['md5']:
+                    md5 = hashlib.md5()
+                    md5.update(urllib.urlopen(data['url']).read())
+                    data['md5'] = md5.hexdigest()
 
             # Resolve extra expressions
             data['extras'] = filter(bool, [
@@ -314,8 +349,10 @@ let dependencies = rec {
                 map(prefix, map(normalize, set(requirements)))
                 + env_build_inputs))
 
-        with open(self.name + '.nix', 'w') as handle:
-            handle.write(output + """\
+        filename = self.prefix + '.nix'
+        if not self.outputs or filename in self.outputs:
+            with open(filename, 'w') as handle:
+                handle.write(output + """\
 }};
 in with dependencies; stdenv.mkDerivation {{
   name = "{name:s}";
@@ -325,8 +362,10 @@ in with dependencies; stdenv.mkDerivation {{
 }}
 """.format(**substitutions))
 
-        with open(self.name + '-env.nix', 'w') as handle:
-            handle.write(output + """\
+        filename = self.prefix + '-env.nix'
+        if not self.outputs or filename in self.outputs:
+            with open(filename, 'w') as handle:
+                handle.write(output + """\
 }};
 in with dependencies; buildEnv {{
   name = "{name:s}";
@@ -343,9 +382,10 @@ in with dependencies; buildEnv {{
 """.format(**substitutions))
 
         for req in requirements:
-            filename = self.name + '-{0:s}.nix'.format(normalize(req))
-            with open(filename, 'w') as handle:
-                handle.write(output + """\
+            filename = self.prefix + '-{0:s}.nix'.format(normalize(req))
+            if not self.outputs or filename in self.outputs:
+                with open(filename, 'w') as handle:
+                    handle.write(output + """\
 }};
 in with dependencies; {key:s}
 """.format(key=prefix(normalize(req))))
