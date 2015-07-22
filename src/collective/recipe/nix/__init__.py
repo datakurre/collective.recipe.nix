@@ -4,6 +4,7 @@ import xmlrpclib
 import zc.recipe.egg
 
 from pkg_resources import Requirement
+from pkg_resources import parse_version
 
 # Map requirements to nixpkgs
 NIXPKGS = {
@@ -235,27 +236,33 @@ let dependencies = rec {
             data = packages[normalize(distribution.project_name)]
 
             # Resolve URL and MD5
-            if not 'url' or not 'md5' in data:
+            if not 'url' or 'md5' not in data:
+                names = [
+                    distribution.project_name,
+                    distribution.project_name.replace('-', '_'),
+                    distribution.project_name.capitalize(),
+                    distribution.project_name.capitalize().replace('-', '_'),
+                ]
+                found_name, found_version = None, None
+                for name in set(names):
+                    for version in sorted(  # find best matching version
+                            self.pypi.package_releases(name, True)):
+                        found_name = name
+                        if parse_version(version) == \
+                                parse_version(distribution.version):
+                            found_version = version
+                            break  # break on exact match
+                        if found_version is None:
+                            found_version = version
+                        if parse_version(found_version) <= \
+                               parse_version(version) <= \
+                               parse_version(distribution.version):
+                            found_version = version
+                    if found_name is not None:
+                        break
                 releases = [release for release in self.pypi.release_urls(
-                            distribution.project_name, distribution.version)
+                            found_name, found_version)
                             if SDIST_URL.match(release['url'])]
-                # XXX: Sometimes package cannot be found with its project name
-                # from PyPI. This should be refactored to be more generic.
-                if not releases:
-                    releases = [release for release in self.pypi.release_urls(
-                                distribution.project_name.replace('-', '_'),
-                                distribution.version)
-                                if SDIST_URL.match(release['url'])]
-                if not releases:
-                    releases = [release for release in self.pypi.release_urls(
-                                distribution.project_name.capitalize(),
-                                distribution.version)
-                                if SDIST_URL.match(release['url'])]
-                if not releases:
-                    releases = [release for release in self.pypi.release_urls(
-                                distribution.project_name,
-                                distribution.version + 'a')
-                                if SDIST_URL.match(release['url'])]
                 assert releases,\
                     "Distribution {0:s}-{1:s} not found at PyPI".format(
                         distribution.project_name, distribution.version)
