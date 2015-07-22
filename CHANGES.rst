@@ -4,8 +4,11 @@ Changelog
 0.9.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix issue where nixpkgs mappings lookup failed because of non-normalized
+  lookup
+  [datakurre]
+- Add support for name option to change the base name for created expressions
+  [datakurre]
 
 0.9.3 (2015-07-22)
 ------------------
