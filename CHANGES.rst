@@ -4,8 +4,8 @@ Changelog
 0.10.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix typo
+  [datakurre]
 
 0.10.0 (2015-07-22)
 -------------------
