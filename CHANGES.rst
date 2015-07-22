@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.9.3 (unreleased)
+0.9.3 (2015-07-22)
 ------------------
 
 - Fix a few more issues where package was not found at PyPI
