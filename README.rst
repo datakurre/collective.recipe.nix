@@ -117,7 +117,7 @@ Run the buildout:
 
 .. code:: bash
 
-   $ nix-shell --run buildout
+   $ nix-shell --run buildout-nix
 
 Now you should be able to run zest.releaser with recommended plugins with:
 
@@ -181,3 +181,4 @@ current example implementation):
 
 **Note:** Currently buildout extends are not cached into Nix expression making
 the expression not completely pure.
+
