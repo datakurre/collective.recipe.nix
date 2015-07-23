@@ -1,4 +1,3 @@
-recursive-include main_directory *
-recursive-include docs *
+recursive-include src *
 include *
 global-exclude *.pyc
