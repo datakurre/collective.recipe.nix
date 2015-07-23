@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.12.2 (2015-07-23)
+0.13.0 (2015-07-23)
 -------------------
 
 - Fix to exclude developed packages from created expressions
