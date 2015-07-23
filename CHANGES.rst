@@ -4,8 +4,8 @@ Changelog
 0.13.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix issue where generated expression was missing $src
+  [datakurre]
 
 0.13.0 (2015-07-23)
 -------------------
