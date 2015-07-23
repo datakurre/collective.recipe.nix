@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.13.2 (unreleased)
+0.13.2 (2015-07-24)
 -------------------
 
 - Fix regression where Nix-installed packages where thought to be developed
