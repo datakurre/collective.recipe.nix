@@ -16,9 +16,15 @@ The minimal buildout part should include ``recipe`` and ``eggs``:
 
 The recipe generates three kind of expressions:
 
-* mkDerivation based [name].nix usable with nix-shell
+* mkDerivation based [name].nix usable with nix-shell and nix-build
 * buildEnv based [name]-env.nix usable with nix-build
 * buildPythonPackage based [name]-[package].nix usable with nix-env -i -f
+
+**Note:** For large projects like Plone, it's recommended to use a local
+mirrored package ``index`` / ``find-links`` to avoid connection issues when
+recipe is resolving each package fetchurl information. In emergency, setting
+``allow-from-cache`` to ``true`` would allow recipe to use configured buildout
+download cache (and create ``file://`` urls) and avoid extra network traffic.
 
 
 Recipe options
@@ -31,9 +37,16 @@ Recipe options
   string to define the used based filename in generated outputs (defaults to
   part name)
 
+**version**
+  version string write into mkDerivation based expression (defaults to 1.0.0)
+
 **prefix**
   string to set prefix (or path) for generated outputs (defaults to working
   directory)
+
+**parts**
+  list of existing buildout sections to install in mkDerivation based expression
+  (defaults to all but the current section)
 
 **outputs**
   list of full generated expression filenames to filter outputs to be generated
@@ -68,8 +81,8 @@ Recipe options
 __ https://github.com/datakurre/collective.recipe.nix/tree/master/examples
 
 
-Example of use
---------------
+Example of generic use
+----------------------
 
 At first, define ``./default.nix`` with buildout::
 
@@ -117,3 +130,47 @@ Or install zest.releaser into your current Nix profile with:
 `See the project repository for more configuration examples.`__
 
 __ https://github.com/datakurre/collective.recipe.nix/tree/master/examples
+
+
+Example of building Plone
+-------------------------
+
+Together with nixpkgs optimized buildout version (available in nixpkgs), this
+recipe can be used to build a Nix derivation using buildout install as in Nix
+derivation builder (see the generated mkDerivation based expression for
+current example implementation):
+
+.. code:: ini
+
+   [buildout]
+   extends = https://dist.plone.org/release/4-latest/versions.cfg
+   parts = plone
+   versions = versions
+
+   [instance]
+   recipe = plone.recipe.zope2instance
+   eggs =
+       Plone
+       plone.app.ldap
+   user = admin:admin
+   var = /tmp
+
+   [plone]
+   recipe = collective.recipe.nix
+   parts = instance
+   eggs = ${instance:eggs}
+
+   [versions]
+   zc.buildout =
+   setuptools =
+   lxml =
+   Pillow =
+
+.. code:: bash
+
+   $ nix-shell --run buildout plone:allow-from-cache=true
+   $ nix-build plone.nix
+   $ results/bin/instance fg
+
+**Note:** Currently buildout extends are not cached into Nix expression making
+the expression not completely pure.

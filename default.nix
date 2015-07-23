@@ -6,7 +6,7 @@ with import <nixpkgs> {}; {
       pythonPackages.lxml
       pythonPackages.pillow
       pythonPackages.readline
-      pythonPackages.zc_buildout_nix
+      pythonPackages.buildout
     ];
     shellHook = ''
       export SSL_CERT_FILE=~/.nix-profile/etc/ca-bundle.crt

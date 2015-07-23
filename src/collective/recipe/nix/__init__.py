@@ -3,7 +3,9 @@ import hashlib
 import os
 import urllib
 import re
+import socket
 import zc.recipe.egg
+import zc.buildout.buildout
 import zc.buildout.easy_install
 
 from pkg_resources import Requirement
@@ -21,6 +23,7 @@ BUILD_INPUTS = {
     'Products.DCWorkflow': ['eggtestinfo'],
     'Products.CMFUid': ['eggtestinfo'],
     'Products.CMFActionIcons': ['eggtestinfo'],
+    'Products.CMFCore': ['eggtestinfo'],
     'dataflake.fakeldap': ['pythonPackages."setuptools-git"'],
     'Products.LDAPUserFolder': ['pythonPackages."setuptools-git"']
 }
@@ -148,22 +151,36 @@ class Nix(object):
                 propagated_build_inputs[key].extend(value.split(','))
                 propagated_eggs.extend(value.split(','))
 
+        # Get version
+        self.version = options.get('version', None) or '1.0.0'
+
+        # Get buildout options
+        buildout_opts = buildout.get('buildout', {}) or {}
+        self.parts = listify(options.get('parts', None)
+                             or buildout_opts.get('parts', None) or '')
+
+        # Resolve recipe eggs for included parts
+        # noinspection PyProtectedMember
+        self.recipes = [zc.buildout.buildout._recipe(buildout.get(part))[0]
+                        for part in self.parts if part is not name]
+
         # Update options['eggs'] with found additional propagatedBuildInputs
+        # and recipe eggs
         options = options.copy()
         options['eggs'] = '\n'.join([options.get('eggs', ''),
-                                     '\n'.join(set(propagated_eggs))])
+                                     '\n'.join(set(propagated_eggs)),
+                                     '\n'.join(set(self.recipes))])
 
         # Save revolved egg and parsed propagatedBuildInputs
         self.egg = zc.recipe.egg.Scripts(buildout, name, options)
         self.propagated_build_inputs = propagated_build_inputs
 
         # Create index
-        buildout = buildout.get('buildout', {}) or {}
         # noinspection PyProtectedMember
         self.index = zc.buildout.easy_install._get_index(
-            (buildout.get('index', None) or '').strip() or None,
-            listify(buildout.get('find-links', None) or ''),
-            listify(buildout.get('allow-hosts', None) or '') or ('*',))
+            (buildout_opts.get('index', None) or '').strip() or None,
+            listify(buildout_opts.get('find-links', None) or ''),
+            listify(buildout_opts.get('allow-hosts', None) or '') or ('*',))
 
     def install(self):
         expressions = EXPRESSIONS.copy()
@@ -275,7 +292,10 @@ let dependencies = rec {
                         break
 
                     if index is self.index:
-                        index.obtain(requirement)
+                        try:
+                            index.obtain(requirement)
+                        except socket.error:
+                            index.obtain(requirement)
 
                     for dist in index[requirement.key]:
                         if dist in requirement:
@@ -295,7 +315,7 @@ let dependencies = rec {
                                 data['url'] = 'file://' + data['url']
                                 break
 
-                assert data['url'], \
+                assert 'url' in data, \
                     "Distribution {0:s}-{1:s} not found".format(
                         distribution.project_name, distribution.version)
 
@@ -337,33 +357,57 @@ let dependencies = rec {
         # Filter direct requirements
         requirements = [ws.find(Requirement.parse(req)).project_name
                         for req in requirements
-                        if req in self.options.get('eggs', '')]
+                        if req in self.options.get('eggs', '')
+                        or req in self.recipes]
 
         # Build substitution dictionary
         substitutions = dict(
             name=self.name,
+            version=self.version,
             paths='\n    '.join(env_build_inputs),
             extraLibs='\n        '.join(
                 map(prefix, map(normalize, set(requirements)))),
             buildInputs='\n    '.join(
                 map(prefix, map(normalize, set(requirements)))
-                + env_build_inputs))
+                + env_build_inputs),
+            parts=' '.join(self.parts))
 
         filename = self.prefix + '.nix'
         if not self.outputs or filename in self.outputs:
+            __doing__ = 'Created %s.', filename
+            # noinspection PyProtectedMember
+            self.buildout._logger.info(*__doing__)
             with open(filename, 'w') as handle:
                 handle.write(output + """\
 }};
 in with dependencies; stdenv.mkDerivation {{
   name = "{name:s}";
+  version = "{version:}";
+  src = ./.;
   buildInputs = [
     {buildInputs:s}
   ];
+  buildout_nix = "${{(pythonPackages.zc_buildout_nix.overrideDerivation (args: {{
+    propagatedBuildInputs = [
+        {extraLibs:s}
+    ];
+  }}))}}/bin/buildout-nix";
+  buildout_cfg = ./buildout.cfg;
+  builder = builtins.toFile "builder.sh" "
+    source $stdenv/setup
+    mkdir -p $out
+    $buildout_nix -c $buildout_cfg buildout:directory=$out install {parts:s}
+  ";
+  SSL_CERT_FILE="${{cacert}}/etc/ssl/certs/ca-bundle.crt";
+  inherit (stdenv);
 }}
 """.format(**substitutions))
 
         filename = self.prefix + '-env.nix'
         if not self.outputs or filename in self.outputs:
+            __doing__ = 'Created %s.', filename
+            # noinspection PyProtectedMember
+            self.buildout._logger.info(*__doing__)
             with open(filename, 'w') as handle:
                 handle.write(output + """\
 }};
@@ -384,6 +428,9 @@ in with dependencies; buildEnv {{
         for req in requirements:
             filename = self.prefix + '-{0:s}.nix'.format(normalize(req))
             if not self.outputs or filename in self.outputs:
+                __doing__ = 'Created %s.', filename
+                # noinspection PyProtectedMember
+                self.buildout._logger.info(*__doing__)
                 with open(filename, 'w') as handle:
                     handle.write(output + """\
 }};
