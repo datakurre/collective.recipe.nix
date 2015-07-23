@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
+from pkg_resources import DEVELOP_DIST
+from pkg_resources import Requirement
 import hashlib
 import os
-import urllib
 import re
 import socket
-import zc.recipe.egg
+import urllib
 import zc.buildout.buildout
 import zc.buildout.easy_install
-
-from pkg_resources import Requirement
+import zc.recipe.egg
 
 
 # Map requirements to nixpkgs
@@ -55,6 +55,13 @@ def prefix(s, prefix='_'):
     return prefix + s
 
 
+def unprefix(s, prefix='_'):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    else:
+        return s
+
+
 def normalize(s):
     # Normalize given derivation name and prefix it with '_' to avoid
     # possible nixpkgs conflicts
@@ -95,8 +102,10 @@ def resolve_dependencies(requirements, ws, inject, requires=None, seen=None):
         distribution_requires = distribution.requires(requirement.extras)
         distribution_requires += inject.get(normalize(name), [])
 
-        for req in [normalize(ws.find(r).project_name)
-                    for r in distribution_requires]:
+        for req in [normalize(d.project_name) for d
+                    in map(ws.find, distribution_requires)
+                    if not (d.precedence == DEVELOP_DIST
+                            and os.path.isdir(d.location))]:
             key = '{0:s}-{1:s}'.format(*sorted([normalize(name), req]))
             if key not in seen and req not in requires[name]:
                 requires[name].append(req)
@@ -186,6 +195,7 @@ class Nix(object):
     def install(self):
         expressions = EXPRESSIONS.copy()
         requirements, ws = self.egg.working_set()
+        develop_requirements = []
         packages = {}
 
         # Init package metadata
@@ -194,6 +204,8 @@ class Nix(object):
                 'key': prefix(normalize(distribution.project_name)),
                 'name': '%s-%s' % (distribution.project_name,
                                    distribution.version),
+                'requirement': '%s==%s' % (distribution.project_name,
+                                           distribution.version),
                 'buildInputs': BUILD_INPUTS.get(distribution.project_name, []),
                 'propagatedBuildInputs': []
             }
@@ -278,6 +290,15 @@ let dependencies = rec {
             # Build expression for package
             data = packages[normalize(distribution.project_name)]
 
+            # But skip developed packages
+            if distribution.precedence == DEVELOP_DIST \
+                    and os.path.isdir(distribution.location):
+                develop_requirements.extend([
+                    packages[unprefix(key)]['requirement']
+                    for key in data['propagatedBuildInputs']
+                ])
+                continue
+
             # Resolve URL and MD5
             if 'url' not in data or 'md5' not in data:
                 requirement = Requirement.parse(
@@ -356,10 +377,19 @@ let dependencies = rec {
 {extras:s}""".format(**substitutions)
 
         # Filter direct requirements
-        requirements = [ws.find(Requirement.parse(req)).project_name
+        requirements = [ws.find(Requirement.parse(req))
                         for req in requirements
                         if req in self.options.get('eggs', '')
                         or req in self.recipes]
+
+        # Add requirements from developed packages
+        requirements += [ws.find(Requirement.parse(req))
+                         for req in develop_requirements]
+
+        # Filter developed packages
+        requirements = [dist.project_name for dist in requirements
+                        if not (dist.precedence == DEVELOP_DIST
+                                and os.path.isdir(dist.location))]
 
         # Build substitution dictionary
         substitutions = dict(
