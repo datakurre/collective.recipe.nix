@@ -413,7 +413,7 @@ let dependencies = rec {
 }};
 in with dependencies; stdenv.mkDerivation {{
   name = "{name:s}";
-  version = "{version:}";
+  version = "{version:s}";
   src = ./.;
   buildInputs = [
     {buildInputs:s}
