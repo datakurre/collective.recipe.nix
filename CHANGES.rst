@@ -4,8 +4,9 @@ Changelog
 0.13.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix regression where Nix-installed packages where thought to be developed
+  packages
+  [datakurre]
 
 0.13.1 (2015-07-23)
 -------------------
