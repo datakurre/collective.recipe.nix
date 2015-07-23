@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.12.1 (unreleased)
+0.12.1 (2015-07-23)
 -------------------
 
 - Cleanup generated [name].nix expression
