@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.11.0 (unreleased)
+0.11.0 (2015-07-23)
 -------------------
 
 - Change package lookup to use setuptools package index
