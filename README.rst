@@ -165,6 +165,7 @@ current example implementation):
    eggs = ${instance:eggs}
    nixpkgs =
        zc.buildout=pythonPackages.zc_buildout_nix
+   outputs = plone.nix
 
    [versions]
    zc.buildout =
@@ -174,7 +175,7 @@ current example implementation):
 
 .. code:: bash
 
-   $ nix-shell --run buildout plone:allow-from-cache=true
+   $ nix-shell --run "buildout-nix plone:allow-from-cache=true"
    $ nix-build plone.nix
    $ results/bin/instance fg
 
