@@ -1,11 +1,20 @@
 Changelog
 =========
 
-0.10.2 (unreleased)
+0.11.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Change package lookup to use setuptools package index
+  [datakurre]
+- Add allow-from-cache option to distributions from from download-cache
+  [datakurre]
+- Add prefix option to control output paths
+  [datakurre]
+- Add outputs option to filter generated outputs
+  [datakurre]
+- Fix issue where nixpkgs mapping lookup failed because of non-normalize
+  preconfigured mappings
+  [datakurre]
 
 0.10.1 (2015-07-23)
 -------------------

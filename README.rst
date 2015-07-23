@@ -6,15 +6,70 @@ a buildout eggs list. This is work in progress. Please, contribute_.
 
 .. _contribute: https://github.com/datakurre/collective.recipe.nix
 
-Currently the recipe generates three kind of expressions:
+The minimal buildout part should include ``recipe`` and ``eggs``:
 
-* default [name].nix usable with nix-shell
+.. code:: ini
+
+   [releaser]
+   recipe = collective.recipe.nix
+   eggs = zest.releaser[recommended]
+
+The recipe generates three kind of expressions:
+
+* mkDerivation based [name].nix usable with nix-shell
 * buildEnv based [name]-env.nix usable with nix-build
-* buildPythonPackage based [name]-package.nix usable with nix-env -i -f
+* buildPythonPackage based [name]-[package].nix usable with nix-env -i -f
 
 
-Example of usage
-----------------
+Recipe options
+--------------
+
+**eggs**
+  list of packages to generate expressions for
+
+**name**
+  string to define the used based filename in generated outputs (defaults to
+  part name)
+
+**prefix**
+  string to set prefix (or path) for generated outputs (defaults to working
+  directory)
+
+**outputs**
+  list of full generated expression filenames to filter outputs to be generated
+  (defaults to nothing to generate all)
+
+**allow-from-cache**
+  boolean (``true``) to allow generated expression to use package  from
+  buildout download cache (defaults to ``false``)
+
+**build-inputs**
+  list of additional build-inputs from nixpkgs for generated expressions (to be
+  available in nix-shell environment) or list of ``package=nixpkgsPackage``
+  mappings to inject build-inputs for each package's
+  ``buildPythonPackage``-expression
+
+**propagated-build-inputs**
+  list of ``package=other.package`` mappings to inject additional
+  requirements for packages (usually to enable some additional features)
+
+**nixpkgs**
+  list of ``package=pythonPackages.package`` mappings to use existing packages
+  from nixpkgs instead of generating custom ``buildPythonPackage`` (useful with
+  package like Pillow, which need additional care to get built properly)
+
+**urls**
+  list of ``package=url#md5=hash`` mappings to explicitly define package
+  download URL and MD5 checksum for cases where the recipe fails to resolve
+  it automatically
+
+`See the project repository for configuration examples.`__
+
+__ https://github.com/datakurre/collective.recipe.nix/tree/master/examples
+
+
+Example of use
+--------------
 
 At first, define ``./default.nix`` with buildout::
 
@@ -35,30 +90,11 @@ And example ``./buildout.cfg``:
 .. code:: cfg
 
     [buildout]
-    extends = https://dist.plone.org/release/4-latest/versions.cfg
-    parts =
-        plone
-        releaser
-    versions = versions
-
-    [instance]
-    recipe = plone.recipe.zope2instance
-    eggs = Plone
-    user = admin:admin
-
-    [plone]
-    recipe = collective.recipe.nix
-    eggs =
-        ${instance:eggs}
-        plone.recipe.zope2instance
+    parts = releaser
 
     [releaser]
     recipe = collective.recipe.nix
     eggs = zest.releaser[recommended]
-
-    [versions]
-    zc.buildout =
-    setuptools =
 
 Run the buildout:
 
@@ -70,83 +106,14 @@ Now you should be able to run zest.releaser with recommended plugins with:
 
 .. code:: bash
 
-   $ nix-shell zest.releaser.nix --run fullrelease
+   $ nix-shell releaser.nix --run fullrelease
 
-And launching python with all Plone dependencies (after removing
-buildout created site.py to remove references from buildout installed
-eggs) with:
+Or install zest.releaser into your current Nix profile with:
 
 .. code:: bash
 
-   $ rm -f parts/instance/site.py parts/instance/site.pyc
-   $ nix-shell plone.nix --run python
+   $ nix-env -i -f releaser-zest_releaser.nix
 
-Plone could be started by entering the following lines into the
-interpreter:
+`See the project repository for more configuration examples.`__
 
-.. code:: python
-
-    import plone.recipe.zope2instance.ctl
-    plone.recipe.zope2instance.ctl.main(['-C', 'parts/instance/etc/zope.conf', 'fg'])
-
-
-Advanced configuration
-======================
-
-Adding additional nixpkgs buildInputs:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   build-inputs =
-       redis
-
-Mapping nixpkgs buildInputs for generated Python expressions:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   build-inputs =
-      dataflake.fakeldap=pythonPackages."setuptools-git"
-
-Mapping Python packages as propagatedBuildInputs for generated Python
-expressions:
-
-.. code:: cfg
-
-   [robot]
-   ...
-   propagated-build-inputs =
-      robotframework=robotframework-selenium2library
-
-Replacing otherwise generated Python expressions with existing nixpkgs
-expressions:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   nixpkgs =
-       python-ldap=pythonPackages.ldap
-
-Adding URLs for packages not available at PyPI:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   urls =
-       Plone=https://example.com/Plone-4.3.6.zip#md5=c370c0c8eace1081ec5b057b2c4149b7
-
-or:
-
-.. code:: cfg
-
-   [plone]
-   ...
-   urls = urls
-
-   [urls]
-   Plone = https://example.com/Plone-4.3.6.zip#md5=c370c0c8eace1081ec5b057b2c4149b7
+__ https://github.com/datakurre/collective.recipe.nix/tree/master/examples

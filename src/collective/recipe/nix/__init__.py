@@ -124,7 +124,7 @@ class Nix(object):
         # Set allow cached flag
         self.allow_from_cache = (
             options.get('allow-from-cache', '').strip().lower()
-            in ('true', 'yes', 'on', '1')
+            in ('true', 'yes', 'on', 'enable', 'enabled', '1')
         )
 
         # Set filename prefix
