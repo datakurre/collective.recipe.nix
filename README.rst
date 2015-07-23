@@ -91,7 +91,6 @@ At first, define ``./default.nix`` with buildout::
         name = "myEnv";
         buildInputs = [
           pythonPackages.ldap
-          pythonPackages.lxml
           pythonPackages.pillow
           pythonPackages.readline
           pythonPackages.zc_buildout_nix
@@ -168,7 +167,6 @@ current example implementation):
    [versions]
    zc.buildout =
    setuptools =
-   lxml =
    Pillow =
 
 .. code:: bash

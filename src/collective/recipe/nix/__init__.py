@@ -13,7 +13,6 @@ import zc.recipe.egg
 
 # Map requirements to nixpkgs
 NIXPKGS = {
-    'lxml': 'pythonPackages.lxml',
     'Pillow': 'pythonPackages.pillow',
     'python-ldap': 'pythonPackages.ldap',
     'zc.buildout': 'pythonPackages.zc_buildout_nix'
@@ -21,6 +20,7 @@ NIXPKGS = {
 
 # Some packages require additional build input
 BUILD_INPUTS = {
+    'lxml': ['libxml2', 'libxslt'],
     'Products.DCWorkflow': ['eggtestinfo'],
     'Products.CMFUid': ['eggtestinfo'],
     'Products.CMFActionIcons': ['eggtestinfo'],

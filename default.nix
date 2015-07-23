@@ -3,7 +3,6 @@ with import <nixpkgs> {}; {
     name = "myEnv";
     buildInputs = [
       pythonPackages.ldap
-      pythonPackages.lxml
       pythonPackages.pillow
       pythonPackages.readline
       pythonPackages.zc_buildout_nix
