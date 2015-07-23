@@ -81,6 +81,14 @@ def see(project_name, requirements, ws, seen):
             see(project_name, ws.find(req).requires(req.extras), ws, seen)
 
 
+def is_develop_dist(dist):
+    return all([
+        dist.precedence == DEVELOP_DIST,
+        os.path.isdir(dist.location),
+        not dist.location.endswith(os.path.sep + 'site-packages')
+    ])
+
+
 def resolve_dependencies(requirements, ws, inject, requires=None, seen=None):
 
     # Init
@@ -104,8 +112,7 @@ def resolve_dependencies(requirements, ws, inject, requires=None, seen=None):
 
         for req in [normalize(d.project_name) for d
                     in map(ws.find, distribution_requires)
-                    if not (d.precedence == DEVELOP_DIST
-                            and os.path.isdir(d.location))]:
+                    if not is_develop_dist(d)]:
             key = '{0:s}-{1:s}'.format(*sorted([normalize(name), req]))
             if key not in seen and req not in requires[name]:
                 requires[name].append(req)
@@ -291,8 +298,7 @@ let dependencies = rec {
             data = packages[normalize(distribution.project_name)]
 
             # But skip developed packages
-            if distribution.precedence == DEVELOP_DIST \
-                    and os.path.isdir(distribution.location):
+            if is_develop_dist(distribution):
                 develop_requirements.extend([
                     packages[unprefix(key)]['requirement']
                     for key in data['propagatedBuildInputs']
@@ -388,8 +394,7 @@ let dependencies = rec {
 
         # Filter developed packages
         requirements = [dist.project_name for dist in requirements
-                        if not (dist.precedence == DEVELOP_DIST
-                                and os.path.isdir(dist.location))]
+                        if not is_develop_dist(dist)]
 
         # Build substitution dictionary
         substitutions = dict(
