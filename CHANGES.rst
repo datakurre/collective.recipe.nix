@@ -4,8 +4,8 @@ Changelog
 0.12.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Cleanup generated [name].nix expression
+  [datakurre]
 
 0.12.0 (2015-07-23)
 -------------------
