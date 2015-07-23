@@ -1,11 +1,12 @@
 Changelog
 =========
 
-0.13.3 (unreleased)
+0.14.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Remove default nixpkgs mapping for lxml to allow custom lxml versions by
+  default
+  [datakurre]
 
 0.13.2 (2015-07-24)
 -------------------
