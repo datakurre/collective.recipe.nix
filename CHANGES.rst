@@ -1,11 +1,13 @@
 Changelog
 =========
 
-0.12.2 (unreleased)
+0.12.2 (2015-07-23)
 -------------------
 
-- Nothing changed yet.
-
+- Fix to exclude developed packages from created expressions
+  [datakurre]
+- Add zc.buildout -> zc_buildout_nix to default nixpkgs mapping
+  [datakurre]
 
 0.12.1 (2015-07-23)
 -------------------
