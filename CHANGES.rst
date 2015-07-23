@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.13.1 (unreleased)
+0.13.1 (2015-07-23)
 -------------------
 
 - Fix issue where generated expression was missing $src
