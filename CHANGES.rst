@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.12.0 (unreleased)
+0.12.0 (2015-07-23)
 -------------------
 
 - Add support for installing the configured buildout with nix
