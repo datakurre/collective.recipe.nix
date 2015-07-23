@@ -15,7 +15,8 @@ from pkg_resources import Requirement
 NIXPKGS = {
     'lxml': 'pythonPackages.lxml',
     'Pillow': 'pythonPackages.pillow',
-    'python-ldap': 'pythonPackages.ldap'
+    'python-ldap': 'pythonPackages.ldap',
+    'zc.buildout': 'pythonPackages.zc_buildout_nix'
 }
 
 # Some packages require additional build input

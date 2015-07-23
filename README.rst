@@ -163,8 +163,6 @@ current example implementation):
    recipe = collective.recipe.nix
    parts = instance
    eggs = ${instance:eggs}
-   nixpkgs =
-       zc.buildout=pythonPackages.zc_buildout_nix
    outputs = plone.nix
 
    [versions]
