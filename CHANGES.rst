@@ -1,11 +1,12 @@
 Changelog
 =========
 
-0.11.1 (unreleased)
+0.12.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Add support for installing the configured buildout with nix
+  in the generated [name].nix expression
+  [datakurre]
 
 0.11.0 (2015-07-23)
 -------------------
