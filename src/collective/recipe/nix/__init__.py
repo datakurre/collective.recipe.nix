@@ -205,6 +205,11 @@ class Nix(object):
         develop_requirements = []
         packages = {}
 
+        # Filter direct requirements
+        requirements = [req for req in requirements
+                        if req in self.options.get('eggs', '')
+                        or req in self.recipes]
+
         # Init package metadata
         for distribution in ws:
             packages[normalize(distribution.project_name)] = {
@@ -238,7 +243,8 @@ class Nix(object):
         # Resolve propagatedBuildInputs from package dependencies and buildout
         for project_name, requires in resolve_dependencies(
                 map(Requirement.parse, requirements), ws,
-                dict([(normalize(key), map(Requirement.parse, value))
+                dict([(normalize(ws.find(Requirement.parse(key)).project_name),
+                       map(Requirement.parse, value))
                       for key, value
                       in self.propagated_build_inputs.items()])).items():
             packages[normalize(project_name)]['propagatedBuildInputs'] = \
@@ -382,11 +388,9 @@ let dependencies = rec {
   }};
 {extras:s}""".format(**substitutions)
 
-        # Filter direct requirements
+        # Find required distributions
         requirements = [ws.find(Requirement.parse(req))
-                        for req in requirements
-                        if req in self.options.get('eggs', '')
-                        or req in self.recipes]
+                        for req in requirements]
 
         # Add requirements from developed packages
         requirements += [ws.find(Requirement.parse(req))
