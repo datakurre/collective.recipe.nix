@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.14.0 (unreleased)
+0.14.0 (2015-07-24)
 -------------------
 
 - Remove default nixpkgs mapping for lxml to allow custom lxml versions by
