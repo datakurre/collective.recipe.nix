@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.14.1 (unreleased)
+0.14.1 (2015-07-24)
 -------------------
 
 - Fix issue where buildout provided propagatedBuildInputs were not always included
