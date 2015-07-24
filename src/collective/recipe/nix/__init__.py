@@ -39,8 +39,8 @@ EXPRESSIONS = {
   eggtestinfo = buildPythonPackage {
     name = "eggtestinfo-0.3";
     src = fetchurl {
-        url = "https://pypi.python.org/packages/source/e/eggtestinfo/eggtestinfo-0.3.tar.gz";
-        md5 = "6f0507aee05f00c640c0d64b5073f840";
+      url = "https://pypi.python.org/packages/source/e/eggtestinfo/eggtestinfo-0.3.tar.gz";
+      md5 = "6f0507aee05f00c640c0d64b5073f840";
     };
     doCheck = false;
   };
@@ -369,8 +369,8 @@ let dependencies = rec {
   {key:s} = buildPythonPackage {{
     name = "{name:s}";
     src = fetchurl {{
-        url = "{url:s}";
-        md5 = "{md5:s}";
+      url = "{url:s}";
+      md5 = "{md5:s}";
     }};
     buildInputs = [
       {buildInputs:s}
