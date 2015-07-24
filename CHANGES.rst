@@ -4,8 +4,8 @@ Changelog
 0.14.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix issue where buildout provided propagatedBuildInputs were not always included
+  [datakurre]
 
 0.14.0 (2015-07-24)
 -------------------
