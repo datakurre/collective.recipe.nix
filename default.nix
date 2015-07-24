@@ -2,6 +2,8 @@ with import <nixpkgs> {}; {
   myEnv = stdenv.mkDerivation {
     name = "myEnv";
     buildInputs = [
+      libxml2
+      libxslt
       pythonPackages.ldap
       pythonPackages.pillow
       pythonPackages.readline
