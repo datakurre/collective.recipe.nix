@@ -479,7 +479,7 @@ in with dependencies; stdenv.mkDerivation {{
   ];
   buildout = "${{(pythonPackages.zc_buildout_nix.overrideDerivation (args: {{
     propagatedBuildInputs = [
-        {extraLibs:s}
+      {extraLibs:s}
     ];
   }}))}}/bin/buildout-nix";
   builder = builtins.toFile "builder.sh" "
