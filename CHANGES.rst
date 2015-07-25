@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.15.2 (unreleased)
+0.16.0 (2015-07-25)
 -------------------
 
 - Add hooks-option to inject build hook scripts into expressions
