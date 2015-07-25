@@ -140,7 +140,7 @@ class Nix(object):
 
     def __init__(self, buildout, name, options):
         self.buildout = buildout
-        self.name = name
+        self.name = (options.get('name') or '').strip() or name
         self.options = options
 
         # Set allowed outputs
@@ -172,9 +172,6 @@ class Nix(object):
                 propagated_build_inputs.setdefault(key, [])
                 propagated_build_inputs[key].extend(value.split(','))
                 propagated_eggs.extend(value.split(','))
-
-        # Get version
-        self.version = options.get('version', None) or '1.0.0'
 
         # Get buildout options
         buildout_opts = buildout.get('buildout', {}) or {}
@@ -458,7 +455,6 @@ let dependencies = rec {
         # Build substitution dictionary
         substitutions = dict(
             name=self.name,
-            version=self.version,
             paths='\n    '.join(env_build_inputs),
             extraLibs='\n        '.join(
                 map(prefix, map(normalize, set(requirements)))),
@@ -477,7 +473,6 @@ let dependencies = rec {
 }};
 in with dependencies; stdenv.mkDerivation {{
   name = "{name:s}";
-  version = "{version:s}";
   src = ./.;
   buildInputs = [
     {buildInputs:s}

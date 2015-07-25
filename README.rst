@@ -36,11 +36,8 @@ Recipe options
   list of packages to generate expressions for
 
 **name**
-  string to define the used based filename in generated outputs (defaults to
-  part name)
-
-**version**
-  version string write into mkDerivation based expression (defaults to 1.0.0)
+  string to define the name used in the resulting derivation and in the
+  generated filenames (defaults to part name)
 
 **prefix**
   string to set prefix (or path) for generated outputs (defaults to working
@@ -150,15 +147,13 @@ current example implementation):
 .. code:: ini
 
    [buildout]
-   extends = https://dist.plone.org/release/4-latest/versions.cfg
+   extends = https://dist.plone.org/release/5-latest/versions.cfg
    parts = plone
    versions = versions
 
    [instance]
    recipe = plone.recipe.zope2instance
-   eggs =
-       Plone
-       plone.app.ldap
+   eggs = Plone
    user = admin:admin
    var = /tmp
 
