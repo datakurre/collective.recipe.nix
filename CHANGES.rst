@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.15.0 (unreleased)
+0.15.0 (2015-07-25)
 -------------------
 
 - Fix to cache resolved fetchurl details between builds into
