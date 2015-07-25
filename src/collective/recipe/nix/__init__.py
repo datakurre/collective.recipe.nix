@@ -483,11 +483,11 @@ in with dependencies; stdenv.mkDerivation {{
     ];
   }}))}}/bin/buildout-nix";
   builder = builtins.toFile "builder.sh" "
-    source $stdenv/setup
-    mkdir -p $out
-    $buildout -oU -c $config buildout:directory=$out
-    if [ -d $out/eggs ]; then rmdir $out/eggs; fi
-    if [ -d $out/develop-eggs ]; then rmdir $out/develop-eggs; fi
+source $stdenv/setup
+mkdir -p $out
+$buildout -oU -c $config buildout:directory=$out
+if [ -d $out/eggs ]; then rmdir $out/eggs; fi
+if [ -d $out/develop-eggs ]; then rmdir $out/develop-eggs; fi
   ";
   config = builtins.toFile "buildout.cfg" "
 {buildout:s}
