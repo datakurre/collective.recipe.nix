@@ -482,7 +482,7 @@ in with dependencies; stdenv.mkDerivation {{
   buildInputs = [
     {buildInputs:s}
   ];
-  buildout_nix = "${{(pythonPackages.zc_buildout_nix.overrideDerivation (args: {{
+  buildout = "${{(pythonPackages.zc_buildout_nix.overrideDerivation (args: {{
     propagatedBuildInputs = [
         {extraLibs:s}
     ];
@@ -490,11 +490,13 @@ in with dependencies; stdenv.mkDerivation {{
   builder = builtins.toFile "builder.sh" "
     source $stdenv/setup
     mkdir -p $out
-    $buildout_nix -oU -c $buildout_cfg buildout:directory=$out
+    $buildout -oU -c $config buildout:directory=$out
+    if [ -d $out/eggs ]; then rmdir $out/eggs; fi
+    if [ -d $out/develop-eggs ]; then rmdir $out/develop-eggs; fi
   ";
-  SSL_CERT_FILE="${{cacert}}/etc/ssl/certs/ca-bundle.crt";
-  buildout_cfg = builtins.toFile "buildout.cfg" "
-{buildout:s}";
+  config = builtins.toFile "buildout.cfg" "
+{buildout:s}
+  ";
 }}
 """.format(**substitutions))
 
