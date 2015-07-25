@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.16.1 (unreleased)
+0.17.0 (2015-07-26)
 -------------------
 
 - Fix to embed resolved buildout into expression and run builder's buildout
