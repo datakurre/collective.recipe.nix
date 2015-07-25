@@ -4,8 +4,9 @@ Changelog
 0.16.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix to embed resolved buildout into expression and run builder's buildout
+  in offline mode to make expression deterministic
+  [datakurre]
 
 0.16.0 (2015-07-25)
 -------------------
