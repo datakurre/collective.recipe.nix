@@ -20,7 +20,7 @@ def filename():
 
 
 def load():
-    config = ConfigParser.ConfigParser(allow_no_value=True)
+    config = ConfigParser.ConfigParser()
     config.read(PATHS)
     if not config.has_section('urls'):
         config.add_section('urls')
