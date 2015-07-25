@@ -92,6 +92,8 @@ At first, define ``./default.nix`` with buildout::
       myEnv = stdenv.mkDerivation {
         name = "myEnv";
         buildInputs = [
+          libxml2
+          libxslt
           pythonPackages.ldap
           pythonPackages.pillow
           pythonPackages.readline

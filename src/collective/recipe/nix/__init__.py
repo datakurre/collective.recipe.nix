@@ -449,7 +449,6 @@ in with dependencies; stdenv.mkDerivation {{
     $buildout_nix -c $buildout_cfg buildout:directory=$out install {parts:s}
   ";
   SSL_CERT_FILE="${{cacert}}/etc/ssl/certs/ca-bundle.crt";
-  inherit (stdenv);
 }}
 """.format(**substitutions))
 
