@@ -277,8 +277,7 @@ class Nix(object):
                     packages[key]['md5'] = md5
 
         # Parse package to nixpkgs mapping from buildout
-        nixpkgs = dict([(normalize(k), v) for k, v
-                        in NIXPKGS.copy().items()])
+        nixpkgs = dict([(normalize(k), v) for k, v in NIXPKGS.items()])
         for section in listify(self.options.get('nixpkgs')):
             if section in self.buildout:
                 for key, value in self.buildout.get(section).items():
@@ -290,6 +289,21 @@ class Nix(object):
                 key, value = section.split('=', 1)
                 key = normalize(ws.find(Requirement.parse(key)).project_name)
                 nixpkgs[key] = ' '.join(value.split(','))
+
+        # Parse hooks configuration from buildout
+        hooks = {}
+        for section in listify(self.options.get('hooks')):
+            if '=' not in section:
+                continue
+            key, section = section.split('=', 1)
+            key = normalize(ws.find(Requirement.parse(key)).project_name)
+            hooks.setdefault(key, '')
+            if section in self.buildout:
+                for k, v in self.buildout.get(section).items():
+                    hooks[key] += """
+    {key:s} = ''
+      {value:s}
+    '';""".format(**dict(key=k, value=v.replace('\n', '\n      ')))
 
         output = """\
 with import <nixpkgs> {};
@@ -379,6 +393,7 @@ let dependencies = rec {
                 url=data['url'], md5=data['md5'],
                 buildInputs='\n      '.join(data['buildInputs']),
                 propagatedBuildInputs='\n      '.join(data['propagatedBuildInputs']),  # noqa
+                hooks=hooks.get(normalize(distribution.project_name), ''),  # noqa
                 extras='\n'.join(data['extras']))
 
             output += """\
@@ -393,7 +408,7 @@ let dependencies = rec {
     ];
     propagatedBuildInputs = [
       {propagatedBuildInputs:s}
-    ];
+    ];{hooks:s}
     doCheck = false;
   }};
 {extras:s}""".format(**substitutions)
