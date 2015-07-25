@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.15.1 (unreleased)
+0.15.1 (2015-07-25)
 -------------------
 
 - Cleanup generated expression
