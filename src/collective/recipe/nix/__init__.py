@@ -300,10 +300,13 @@ let dependencies = rec {
 
             # For mapped packages, use existing nixpkgs package instead
             if normalize(distribution.project_name) in nixpkgs:
+                substitutions = dict(
+                    package_name=prefix(normalize(distribution.project_name)),
+                    nixpkgs_package_name=nixpkgs[normalize(distribution.project_name)]  # noqa
+                )
                 output += """\
   {package_name:s} = {nixpkgs_package_name:s};
-""".format(package_name=prefix(normalize(distribution.project_name)),
-           nixpkgs_package_name=nixpkgs[normalize(distribution.project_name)])
+""".format(**substitutions)
                 continue
 
             # Build expression for package
@@ -376,8 +379,7 @@ let dependencies = rec {
                 key=data['key'], name=data['name'],
                 url=data['url'], md5=data['md5'],
                 buildInputs='\n      '.join(data['buildInputs']),
-                propagatedBuildInputs=
-                '\n      '.join(data['propagatedBuildInputs']),
+                propagatedBuildInputs='\n      '.join(data['propagatedBuildInputs']),  # noqa
                 extras='\n'.join(data['extras']))
 
             output += """\
