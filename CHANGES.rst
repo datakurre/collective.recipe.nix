@@ -4,8 +4,8 @@ Changelog
 0.15.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Add hooks-option to inject build hook scripts into expressions
+  [datakurre]
 
 0.15.1 (2015-07-25)
 -------------------
