@@ -16,7 +16,9 @@ buildEnv {
     zlib
     (python.buildEnv.override {
       extraLibs = [
-        pythonPackages.buildout
+        (pythonPackages.zc_buildout_nix.overrideDerivation(args: {
+          postInstall = "";
+        }))
       ];
     })
   ];
