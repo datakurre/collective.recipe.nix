@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
+from configparser import ConfigParser
 from collective.recipe.nix.cache import with_cache
+from future.moves.collections import OrderedDict
+from io import BytesIO
 from pkg_resources import DEVELOP_DIST
 from pkg_resources import Requirement
 import hashlib
 import os
 import re
 import socket
+import sys
 import urllib
 import zc.buildout.buildout
 import zc.buildout.easy_install
@@ -425,6 +429,32 @@ let dependencies = rec {
         requirements = [dist.project_name for dist in requirements
                         if not is_develop_dist(dist)]
 
+        # Resolve used buildout config
+        try:
+            filename = os.path.join(
+                os.getcwd(), sys.argv[sys.argv.index('-c') + 1])
+        except ValueError:
+            filename = os.path.join(os.getcwd(), 'buildout.cfg')
+
+        # Create final buildout
+        config = ConfigParser(dict_type=OrderedDict)
+        with open(filename):
+            config.read(filename)
+        for section in config.sections():
+            if section == 'buildout':
+                for option in config.options(section):
+                    config.remove_option(section, option)
+                config.set(section, 'parts', ' '.join(self.parts))
+                continue
+            elif section == 'versions' or section not in self.parts:
+                config.remove_section(section)
+                continue
+            for option in config.options(section):
+                config.set(section, option,
+                           self.buildout.get(section).get(option))
+        buildout = BytesIO()
+        config.write(buildout)
+
         # Build substitution dictionary
         substitutions = dict(
             name=self.name,
@@ -435,7 +465,7 @@ let dependencies = rec {
             buildInputs='\n    '.join(
                 list(map(prefix, map(normalize, set(requirements))))
                 + env_build_inputs),
-            parts=' '.join(self.parts))
+            buildout=buildout.getvalue().strip())
 
         filename = self.prefix + '.nix'
         if not self.outputs or filename in self.outputs:
@@ -457,13 +487,14 @@ in with dependencies; stdenv.mkDerivation {{
         {extraLibs:s}
     ];
   }}))}}/bin/buildout-nix";
-  buildout_cfg = ./buildout.cfg;
   builder = builtins.toFile "builder.sh" "
     source $stdenv/setup
     mkdir -p $out
-    $buildout_nix -c $buildout_cfg buildout:directory=$out install {parts:s}
+    $buildout_nix -oU -c $buildout_cfg buildout:directory=$out
   ";
   SSL_CERT_FILE="${{cacert}}/etc/ssl/certs/ca-bundle.crt";
+  buildout_cfg = builtins.toFile "buildout.cfg" "
+{buildout:s}";
 }}
 """.format(**substitutions))
 

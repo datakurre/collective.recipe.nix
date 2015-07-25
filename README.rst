@@ -169,16 +169,13 @@ current example implementation):
    outputs = plone.nix
 
    [versions]
-   zc.buildout =
-   setuptools =
    Pillow =
+   setuptools =
+   zc.buildout =
+   zc.recipe.egg =
 
 .. code:: bash
 
-   $ nix-shell --run "buildout-nix plone:allow-from-cache=true"
-   $ nix-build plone.nix
-   $ results/bin/instance fg
-
-**Note:** Currently buildout extends are not cached into Nix expression making
-the expression not completely pure.
-
+   $ nix-shell --run buildout-nix
+   $ nix-build plone.nix -o plone
+   $ plone/bin/instance fg
