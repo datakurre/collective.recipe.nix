@@ -4,8 +4,8 @@ Changelog
 0.17.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Cleanup generated expression
+  [datakurre]
 
 0.17.0 (2015-07-26)
 -------------------
