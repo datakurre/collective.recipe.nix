@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.17.2 (unreleased)
+0.18.0 (2015-07-26)
 -------------------
 
 - Remove version option, because both name and version should be really
