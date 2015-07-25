@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collective.recipe.nix.cache import with_cache
 from pkg_resources import DEVELOP_DIST
 from pkg_resources import Requirement
 import hashlib
@@ -199,7 +200,8 @@ class Nix(object):
             listify(buildout_opts.get('find-links', None) or ''),
             listify(buildout_opts.get('allow-hosts', None) or '') or ('*',))
 
-    def install(self):
+    @with_cache
+    def install(self, cache=None):
         expressions = EXPRESSIONS.copy()
         requirements, ws = self.egg.working_set()
         develop_requirements = []
@@ -250,7 +252,11 @@ class Nix(object):
             packages[normalize(project_name)]['propagatedBuildInputs'] = \
                 map(prefix, map(normalize, requires))
 
-        # Parse package download urls and md5s from buildout
+        # Parse package download urls and md5s from cache and buildout
+        for key, package in packages.items():
+            if cache.has_option('urls', package['name']):
+                package['url'], package['md5'] = spliturl(
+                    cache.get('urls', package['name']))
         for project_name, url in URLS.items():
             packages[normalize(project_name)]['url'] = url
         for section in listify(self.options.get('urls')):
@@ -357,6 +363,9 @@ let dependencies = rec {
                     md5 = hashlib.md5()
                     md5.update(urllib.urlopen(data['url']).read())
                     data['md5'] = md5.hexdigest()
+
+                cache.set('urls', data['name'],
+                          '{0:s}#md5={1:s}'.format(data['url'], data['md5']))
 
             # Resolve extra expressions
             data['extras'] = filter(bool, [
