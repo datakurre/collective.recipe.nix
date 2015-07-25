@@ -1,11 +1,15 @@
 Changelog
 =========
 
-0.14.2 (unreleased)
+0.15.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix to cache resolved fetchurl details between builds into
+  [~/][.]collective.recipe.nix.cfg to ease creating expressions for
+  large projects
+  [datakurre]
+- Add support for Python 3
+  [datakurre]
 
 0.14.1 (2015-07-24)
 -------------------

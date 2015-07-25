@@ -9,6 +9,12 @@ setup(
     # Get more strings from
     # http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
+        'Development Status :: 4 - Beta',
+        'Framework :: Buildout :: Recipe',
+        'Framework :: Buildout',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python',
     ],
     keywords='',

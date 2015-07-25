@@ -22,9 +22,11 @@ The recipe generates three kind of expressions:
 
 **Note:** For large projects like Plone, it's recommended to use a local
 mirrored package ``index`` / ``find-links`` to avoid connection issues when
-recipe is resolving each package fetchurl information. In emergency, setting
-``allow-from-cache`` to ``true`` would allow recipe to use configured buildout
-download cache (and create ``file://`` urls) and avoid extra network traffic.
+recipe is resolving each package fetchurl information. Possible remedies
+include setting ``allow-from-cache`` to ``true`` to allow recipe to use
+configured buildout download cache (and create ``file://`` urls), or just
+running the buildout again with help of recipe created cumulative cache
+(``[~/][.]collective.recipe.nix.cfg``).
 
 
 Recipe options
