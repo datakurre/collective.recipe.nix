@@ -24,6 +24,7 @@ setup(
     install_requires=[
         'setuptools',
         'zc.recipe.egg',
+        'future',
     ],
     extras_require={'test': [
     ]},

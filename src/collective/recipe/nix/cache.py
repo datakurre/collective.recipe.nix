@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import ConfigParser
+from configparser import ConfigParser
 import contextlib
 import os
 
@@ -20,7 +20,7 @@ def filename():
 
 
 def load():
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser()
     config.read(PATHS)
     if not config.has_section('urls'):
         config.add_section('urls')

@@ -326,7 +326,7 @@ let dependencies = rec {
                                           distribution.version))
 
                 # noinspection PyProtectedMember
-                indexes = zc.buildout.easy_install._indexes.values()
+                indexes = list(zc.buildout.easy_install._indexes.values())
                 indexes.remove(self.index)  # move our index to last
 
                 for index in indexes + [self.index]:
@@ -418,7 +418,7 @@ let dependencies = rec {
             extraLibs='\n        '.join(
                 map(prefix, map(normalize, set(requirements)))),
             buildInputs='\n    '.join(
-                map(prefix, map(normalize, set(requirements)))
+                list(map(prefix, map(normalize, set(requirements))))
                 + env_build_inputs),
             parts=' '.join(self.parts))
 
