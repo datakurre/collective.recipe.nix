@@ -4,8 +4,11 @@ Changelog
 0.17.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Remove version option, because both name and version should be really
+  be included in the name option
+  [datakurre]
+- Fix the name option to also affect the resulting derivation name
+  [datakurre]
 
 0.17.1 (2015-07-26)
 -------------------
