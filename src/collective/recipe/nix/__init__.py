@@ -245,9 +245,8 @@ class Nix(object):
         # Resolve propagatedBuildInputs from package dependencies and buildout
         for project_name, requires in resolve_dependencies(
                 map(Requirement.parse, requirements), ws,
-                dict([(normalize(ws.find(Requirement.parse(key)).project_name),
-                       map(Requirement.parse, value))
-                      for key, value
+                dict([(normalize(ws.find(Requirement.parse(k)).project_name),
+                       map(Requirement.parse, v)) for k, v
                       in self.propagated_build_inputs.items()])).items():
             packages[normalize(project_name)]['propagatedBuildInputs'] = \
                 map(prefix, map(normalize, requires))
@@ -278,7 +277,7 @@ class Nix(object):
                     packages[key]['md5'] = md5
 
         # Parse package to nixpkgs mapping from buildout
-        nixpkgs = dict([(normalize(key), value) for key, value
+        nixpkgs = dict([(normalize(k), v) for k, v
                         in NIXPKGS.copy().items()])
         for section in listify(self.options.get('nixpkgs')):
             if section in self.buildout:
@@ -315,8 +314,8 @@ let dependencies = rec {
             # But skip developed packages
             if is_develop_dist(distribution):
                 develop_requirements.extend([
-                    packages[unprefix(key)]['requirement']
-                    for key in data['propagatedBuildInputs']
+                    packages[unprefix(k)]['requirement']
+                    for k in data['propagatedBuildInputs']
                 ])
                 continue
 
