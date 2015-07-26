@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from collective.recipe.nix.cache import with_cache
 from future.moves.collections import OrderedDict
 from io import BytesIO
+from io import StringIO
 from pkg_resources import DEVELOP_DIST
 from pkg_resources import Requirement
 import hashlib
@@ -449,8 +450,13 @@ let dependencies = rec {
             for option in config.options(section):
                 config.set(section, option,
                            self.buildout.get(section).get(option))
-        buildout = BytesIO()
-        config.write(buildout)
+        try:
+            buildout = BytesIO()
+            config.write(buildout)
+        except TypeError:
+            # Python3
+            buildout = StringIO()
+            config.write(buildout)
 
         # Build substitution dictionary
         substitutions = dict(
