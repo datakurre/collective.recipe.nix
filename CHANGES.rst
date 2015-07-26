@@ -4,8 +4,8 @@ Changelog
 0.18.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Fix Python 3 support
+  [datakurre]
 
 0.18.2 (2015-07-26)
 -------------------
