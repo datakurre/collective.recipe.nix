@@ -155,6 +155,9 @@ current example implementation):
    recipe = plone.recipe.zope2instance
    eggs = Plone
    user = admin:admin
+   environment-vars =
+       PTS_LANGUAGES en
+       zope_i18n_allowed_languages en
    var = /tmp
 
    [plone]
