@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.18.3 (unreleased)
+0.18.3 (2015-07-26)
 -------------------
 
 - Fix Python 3 support
