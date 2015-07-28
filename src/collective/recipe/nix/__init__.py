@@ -176,13 +176,15 @@ class Nix(object):
 
         # Get buildout options
         buildout_opts = buildout.get('buildout', {}) or {}
-        self.parts = listify(options.get('parts', None)
-                             or buildout_opts.get('parts', None) or '')
+        self.parts = [part for part
+                      in listify(options.get('parts', None)
+                                 or buildout_opts.get('parts', None) or '')
+                      if part != name]
 
         # Resolve recipe eggs for included parts
         # noinspection PyProtectedMember
         self.recipes = [zc.buildout.buildout._recipe(buildout.get(part))[0]
-                        for part in self.parts if part != name]
+                        for part in self.parts]
 
         # Update options['eggs'] with found additional propagatedBuildInputs
         # and recipe eggs
