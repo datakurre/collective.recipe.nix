@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.1 (unreleased)
+1.0.1 (2015-07-28)
 ------------------
 
 - Fix issue where buildout could not include " characters
