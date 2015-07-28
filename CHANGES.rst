@@ -4,15 +4,13 @@ Changelog
 1.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Fix issue where c.recipe.nix part was included in resulting nix expression
+  [datakurre]
 
 1.0.1 (2015-07-28)
 ------------------
 
 - Fix issue where buildout could not include " characters
-  [datakurre]
-- Fix issue where c.recipe.nix was included in resulting nix expression
   [datakurre]
 - Fix to remove ~/.installed.cfg from built derivation
 
