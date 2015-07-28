@@ -492,12 +492,12 @@ in with dependencies; stdenv.mkDerivation {{
 source $stdenv/setup
 mkdir -p $out
 $buildout -oU -c $config buildout:directory=$out
-if [ -d $out/eggs ]; then rmdir $out/eggs; fi
-if [ -d $out/develop-eggs ]; then rmdir $out/develop-eggs; fi
+rmdir $out/eggs $out/develop-eggs
+rm -f $out/.installed.cfg
   ";
-  config = builtins.toFile "buildout.cfg" "
+  config = builtins.toFile "buildout.cfg" ''
 {buildout:s}
-  ";
+  '';
 }}
 """.format(**substitutions))
 
