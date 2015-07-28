@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='collective.recipe.nix',
-    version='1.0.2',
+    version='1.0.3.dev0',
     description="Buildout recipe for creating Nix expressions from eggs list",
     long_description=(open('README.rst').read() + '\n' +
                       open('CHANGES.rst').read()),
