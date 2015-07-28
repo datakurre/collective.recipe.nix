@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.2 (unreleased)
+1.0.2 (2015-07-28)
 ------------------
 
 - Fix issue where c.recipe.nix part was included in resulting nix expression
