@@ -31,6 +31,7 @@ BUILD_INPUTS = {
     'Products.CMFUid': ['eggtestinfo'],
     'Products.CMFActionIcons': ['eggtestinfo'],
     'Products.CMFCore': ['eggtestinfo'],
+    'Products.GenericSetup': ['eggtestinfo'],
     'dataflake.fakeldap': ['pythonPackages."setuptools-git"'],
     'Products.LDAPUserFolder': ['pythonPackages."setuptools-git"']
 }
