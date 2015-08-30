@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.3 (unreleased)
+1.0.3 (2015-08-30)
 ------------------
 
 - Updated pre-defined propagated build inputs with some known setup requires
