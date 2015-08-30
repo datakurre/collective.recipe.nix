@@ -4,8 +4,8 @@ Changelog
 1.0.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Updated pre-defined propagated build inputs with some known setup requires
+  [datakurre]
 
 1.0.2 (2015-07-28)
 ------------------
