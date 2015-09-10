@@ -101,7 +101,7 @@ At first, define ``./default.nix`` with buildout::
         pythonPackages.zc_buildout_nix
       ];
       shellHook = ''
-        export SSL_CERT_FILE=~/.nix-profile/etc/ca-bundle.crt
+        export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
       '';
     }
 
